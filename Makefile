@@ -1,9 +1,11 @@
 
-SUBDIRS=s3k
+include config.mk
 
-.PHONY: $(SUBDIRS)
+KERNEL=$(abspath s3k.elf)
 
-all: $(SUBDIRS)
+.PHONY: $(KERNEL)
 
-$(SUBDIRS):
-	$(MAKE) -C $@
+all: $(KERNEL)
+
+$(KERNEL):
+	$(MAKE) -C s3k $(KERNEL)
