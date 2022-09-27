@@ -3,7 +3,7 @@ SUBDIRS=separation-kernel root
 BUILD=build
 
 export PREFIX=riscv64-unknown-elf
-export CONFIG_H=../s3k.h
+export CONFIG_H=../config.h
 
 .PHONY: $(SUBDIRS) $(CLEAN_DIRS)
 
