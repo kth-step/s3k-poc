@@ -11,10 +11,10 @@ SRCS=$(wildcard src/*.[cS])
 OBJS=$(patsubst %, $(BUILD)/%.o, $(SRCS))
 
 RISCV_PREFIX?=riscv64-unknown-elf
-CC=$(PREFIX)-gcc
-OBJCOPY=$(PREFIX)-objcopy
-OBJDUMP=$(PREFIX)-objdummp
-SIZE=$(PREFIX)-size
+CC=$(RISCV_PREFIX)-gcc
+OBJCOPY=$(RISCV_PREFIX)-objcopy
+OBJDUMP=$(RISCV_PREFIX)-objdummp
+SIZE=$(RISCV_PREFIX)-size
 
 CFLAGS=-T$(LDS) -nostartfiles
 CFLAGS+=-O2 -gdwarf-2
@@ -37,12 +37,12 @@ $(BUILD)/%.S.o: %.S
 	@echo -e "  CC\t$@"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-%.elf: $(OBJS) $(LDS) 
+$(ELF): $(OBJS) $(LDS) 
 	@mkdir -p $(@D)
 	@echo -e "  CC\t$@"
 	@$(CC) $(CFLAGS) -o $@ $(OBJS)
 
-%.bin: %.elf
+$(BIN): $(ELF) 
 	@mkdir -p $(@D)
 	@echo -e "  OBJCOPY\t$@"
 	@$(OBJCOPY) -O binary $< $@

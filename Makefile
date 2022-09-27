@@ -5,6 +5,7 @@ BUILD=build
 export RISCV_PREFIX?=riscv64-unknown-elf
 # Kernel configuration file
 export CONFIG_H=../config.h
+export PAYLOAD=../build/root/root.bin
 
 SUBDIRS=
 SUBDIRS+=root separation-kernel
