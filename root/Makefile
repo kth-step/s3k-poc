@@ -7,7 +7,7 @@ BIN=$(BUILD)/$(PROGRAM).bin
 
 LDS=root.lds
 
-SRCS=$(wildcard *.[cS])
+SRCS=$(wildcard src/*.[cS])
 OBJS=$(patsubst %, $(BUILD)/%.o, $(SRCS))
 
 PREFIX?=riscv64-unknown-elf
@@ -17,7 +17,7 @@ OBJDUMP=$(PREFIX)-objdummp
 SIZE=$(PREFIX)-size
 
 CFLAGS=-T$(LDS) -nostartfiles
-CFLAGS+=-O2
+CFLAGS+=-O2 -gdwarf-2
 CFLAGS+=-fPIC -no-pie
 
 .PHONY: all target clean
