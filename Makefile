@@ -1,19 +1,21 @@
 
-SUBDIRS=separation-kernel root
 BUILD=build
 
-export PREFIX=riscv64-unknown-elf
+# Prefix of toolchain
+export RISCV_PREFIX?=riscv64-unknown-elf
+# Kernel configuration file
 export CONFIG_H=../config.h
 
-.PHONY: $(SUBDIRS) $(CLEAN_DIRS)
+SUBDIRS=
+SUBDIRS+=root separation-kernel
+
+.PHONY: all clean $(SUBDIRS)
 
 all: $(SUBDIRS)
 
 $(SUBDIRS):
 	@$(MAKE) -C $@ BUILD=../$(BUILD)/$@
 
-separation-kernel: root
-
 clean:
-	@echo "Cleaning"
+	@echo "  CLEANING"
 	@rm -rf $(BUILD)
