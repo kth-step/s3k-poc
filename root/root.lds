@@ -3,18 +3,16 @@ OUTPUT_ARCH("riscv")
 ENTRY(_start)
 
 SECTIONS {
-    PROVIDE(_init_start = .);
-
+    PROVIDE(__init_start__ = .);
     .text : {
         KEEP(*(.text.init))
     }
 
     .data : {
         KEEP(*(.data.init))
+        . = ALIGN(4096);
     }
-
-    PROVIDE(_init_end = ALIGN(4096));
-    . = ALIGN(4096);
+    PROVIDE(__init_end__ = .);
 
     .text : {
         *(.text)
@@ -27,4 +25,6 @@ SECTIONS {
         *(.sdata)
         *(.srodata)
     }
+
+    ASSERT(__init_start__ + 4096 == __init_end__, "Error: Init has wrong size")
 }

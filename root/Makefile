@@ -18,6 +18,7 @@ SIZE=$(PREFIX)-size
 
 CFLAGS=-T$(LDS) -nostartfiles
 CFLAGS+=-O2
+CFLAGS+=-fPIC -no-pie
 
 .PHONY: all target clean
 .SECONDARY:
