@@ -1,6 +1,11 @@
 #!/bin/env bash
 PROGRAM=$1
 
+if [ -z "$PROGRAM" ]; then
+    echo "Arg 1, program/elf, missing."
+    exit 1
+fi
+
 qemu-system-riscv64 -M virt -smp 5 -m 8G -nographic -bios none -kernel $PROGRAM -s -S &
 
 x-terminal-emulator -e \
