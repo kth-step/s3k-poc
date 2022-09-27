@@ -1,6 +1,6 @@
 
 SUBDIRS=separation-kernel root
-CLEAN_DIRS=$(addsuffix .clean, $(SUBDIRS))
+BUILD=build
 
 export PREFIX=riscv64-unknown-elf
 export CONFIG_H=../s3k.h
@@ -10,12 +10,10 @@ export CONFIG_H=../s3k.h
 all: $(SUBDIRS)
 
 $(SUBDIRS):
-	@$(MAKE) -C $@ ../build/$@.elf ../build/$@.bin 
+	@$(MAKE) -C $@ BUILD=../$(BUILD)/$@
 
 separation-kernel: root
 
-clean: $(CLEAN_DIRS)
-	@rm -rf build
-
-$(CLEAN_DIRS):
-	@$(MAKE) -s -C $(basename $@) clean
+clean:
+	@echo "Cleaning"
+	@rm -rf $(BUILD)

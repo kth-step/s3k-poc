@@ -24,7 +24,7 @@
 //#define MEMORY_PROTECTION
 
 /* Set absolute path of payload */
-#define PAYLOAD "../root.bin"
+#define PAYLOAD "../build/root/root.bin"
 
 #ifndef __ASSEMBLER__
 /* Non assembly definitions */

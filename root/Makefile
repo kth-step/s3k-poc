@@ -1,7 +1,14 @@
-BUILD=build
+PROGRAM ?=root
+BUILD   ?=build
+
+TARGET ?=$(ELF) $(BIN)
+ELF=$(BUILD)/$(PROGRAM).elf
+BIN=$(BUILD)/$(PROGRAM).bin
+
+LDS=root.lds
+
 SRCS=$(wildcard *.[cS])
 OBJS=$(patsubst %, $(BUILD)/%.o, $(SRCS))
-LDS=root.lds
 
 PREFIX?=riscv64-unknown-elf
 CC=$(PREFIX)-gcc
@@ -12,10 +19,12 @@ SIZE=$(PREFIX)-size
 CFLAGS=-T$(LDS) -nostartfiles
 CFLAGS+=-O2
 
-.PHONY: all
+.PHONY: all target clean
 .SECONDARY:
 
-all: $(OBJS)
+all: target
+
+target: $(TARGET)
 
 $(BUILD)/%.c.o: %.c
 	@mkdir -p $(@D)
@@ -39,4 +48,4 @@ $(BUILD)/%.S.o: %.S
 
 clean:
 	@echo "Cleaning root"
-	@rm -f $(OBJS)
+	@rm -f $(TARGET) $(OBJS)
