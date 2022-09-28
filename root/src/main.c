@@ -29,6 +29,6 @@ static void uart_puts(const char *c) {
 
 
 int main(void) {
-    uart_puts("hello, world");
+    uart_puts("hello, world\n");
     while (1);
 }

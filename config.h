@@ -23,6 +23,4 @@
 /* Uncomment to enable memory protection */
 //#define MEMORY_PROTECTION
 
-#ifndef __ASSEMBLER__
-/* Non assembly definitions */
-#endif
+#define PAYLOAD "../build/root/root.bin"

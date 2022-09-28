@@ -1,22 +1,37 @@
-
-BUILD=build
+.POSIX:
 
 # Prefix of toolchain
-export RISCV_PREFIX?=riscv64-unknown-elf
+RISCV_PREFIX?=riscv64-unknown-elf
+
 # Kernel configuration file
-export CONFIG_H=../config.h
-export PAYLOAD=../build/root/root.bin
+CONFIG_H=../config.h
 
-SUBDIRS=
-SUBDIRS+=root separation-kernel
+# Build directory
+BUILD?=build
 
-.PHONY: all clean $(SUBDIRS)
+# Subdirectories
+KERNEL=separation-kernel
+PROGRAMS=root
+PAYLOAD=../build/root/root.bin
 
-all: $(SUBDIRS)
+.PHONY: all clean $(KERNEL) $(PROGRAMS)
+.SECONDARY:
 
-$(SUBDIRS):
-	@$(MAKE) -C $@ BUILD=../$(BUILD)/$@
+export RISCV_PREFIX
+
+all: $(KERNEL) $(PROGRAMS)
+
+
+$(PAYLOAD):
+	@for prog in $(PROGRAMS); do \
+	    $(MAKE) -C $$prog BUILD=../$(BUILD)/$$prog; \
+	done
+$(CONFIG_H): $(PAYLOAD)
+	@touch $(CONFIG_H)
+$(KERNEL): $(CONFIG_H) $(PAYLOAD)
+	@$(MAKE) -C $@ BUILD=../$(BUILD)/$@ CONFIG_H=$(CONFIG_H)
 
 clean:
 	@printf "  CLEANING\n"
 	@rm -rf $(BUILD)
+
