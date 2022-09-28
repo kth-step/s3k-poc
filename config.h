@@ -22,5 +22,3 @@
 
 /* Uncomment to enable memory protection */
 //#define MEMORY_PROTECTION
-
-#define PAYLOAD "../build/root/root.bin"

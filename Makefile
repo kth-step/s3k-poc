@@ -4,34 +4,38 @@
 RISCV_PREFIX?=riscv64-unknown-elf
 
 # Kernel configuration file
-CONFIG_H=../config.h
-
-# Build directory
-BUILD?=build
+CONFIG_H=config.h
 
 # Subdirectories
 KERNEL=separation-kernel
+TARGET=separation-kernel/build/separation-kernel.elf
 PROGRAMS=root
-PAYLOAD=../build/root/root.bin
+PAYLOAD=root/build/root.bin
 
-.PHONY: all clean $(KERNEL) $(PROGRAMS)
+.PHONY: all clean $(KERNEL) $(PROGRAMS) qemu
 .SECONDARY:
 
 export RISCV_PREFIX
 
-all: $(KERNEL) $(PROGRAMS)
+all: $(TARGET)
 
+$(PROGRAMS):
+	@printf "MAKE\t$@\n"
+	@$(MAKE) -s -C $@
 
-$(PAYLOAD):
-	@for prog in $(PROGRAMS); do \
-	    $(MAKE) -C $$prog BUILD=../$(BUILD)/$$prog; \
-	done
-$(CONFIG_H): $(PAYLOAD)
-	@touch $(CONFIG_H)
+$(PAYLOAD): $(PROGRAMS)
+
 $(KERNEL): $(CONFIG_H) $(PAYLOAD)
-	@$(MAKE) -C $@ BUILD=../$(BUILD)/$@ CONFIG_H=$(CONFIG_H)
+	@printf "MAKE\t$@\n"
+	@$(MAKE) -s -C $@ CONFIG_H=../$(CONFIG_H) PAYLOAD=../$(PAYLOAD) 
+
+$(TARGET): $(KERNEL)
 
 clean:
-	@printf "  CLEANING\n"
-	@rm -rf $(BUILD)
+	@for prog in $(PROGRAMS) $(KERNEL); do \
+	    $(MAKE) -s -C $$prog clean; \
+	done
 
+qemu: $(TARGET)
+	@printf "RUN QEMU\n"
+	@./scripts/qemu.sh $(TARGET)
