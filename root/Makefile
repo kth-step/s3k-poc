@@ -1,11 +1,14 @@
 PROGRAM ?=root
 BUILD   ?=build
 
-TARGET ?=$(ELF) $(BIN)
+TARGET ?=$(ELF) $(BIN) $(DA)
 ELF=$(BUILD)/$(PROGRAM).elf
 BIN=$(BUILD)/$(PROGRAM).bin
+DA=$(BUILD)/$(PROGRAM).da
 
 LDS=root.lds
+API=../separation-kernel/api
+PLATFORM=../separation-kernel/bsp/virt.h
 
 OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
      $(patsubst %.S, $(BUILD)/%.o, $(wildcard src/*.S))
@@ -13,12 +16,14 @@ OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
 RISCV_PREFIX?=riscv64-unknown-elf
 CC=$(RISCV_PREFIX)-gcc
 OBJCOPY=$(RISCV_PREFIX)-objcopy
-OBJDUMP=$(RISCV_PREFIX)-objdummp
+OBJDUMP=$(RISCV_PREFIX)-objdump
 SIZE=$(RISCV_PREFIX)-size
 
-CFLAGS=-T$(LDS) -nostartfiles
+CFLAGS+=-T$(LDS) -nostartfiles
 CFLAGS+=-O2 -gdwarf-2
-CFLAGS+=-fPIC -no-pie
+CFLAGS+=-static-pie -ffreestanding --specs=nano.specs
+CFLAGS+=-I$(API) -Iinc
+CFLAGS+=-include $(PLATFORM)
 
 PAYLOADS=../uart/build/uart.bin
 
@@ -48,6 +53,11 @@ $(BIN): $(ELF)
 	@mkdir -p $(@D)
 	@printf "OBJCOPY\t$@\n"
 	@$(OBJCOPY) -O binary $< $@
+
+$(DA): $(ELF)
+	@mkdir -p $(@D)
+	@printf "OBJDUMP\t$@\n"
+	@$(OBJDUMP) -d $< > $@
 
 clean:
 	@printf "CLEAN\t$(PROGRAM)\n"

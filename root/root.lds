@@ -8,13 +8,32 @@ SECTIONS {
         *(.text)
         *(.text.*)
     }
-
-    .data : {
+    
+    .rodata : ALIGN(4) {
         PROVIDE(__global_pointer$ = . + 0x7bc);
+        *(.srdata)
+        *(.srdata.*)
+        *(.srodata)
+        *(.srodata.*)
+        *(.rdata)
+        *(.rdata.*)
+        *(.rodata)
+        *(.rodata.*)
+        *(.sdata)
+        *(.sdata.*)
         *(.data)
         *(.data.*)
-        *(.sdata)
-        *(.srodata)
+    }
+
+    .bss : ALIGN(4) {
+        PROVIDE(_bss = .);
+        *(.sbss)
+        *(.sbss.*)
+        *(.bss)
+        *(.bss.*)
+        *(COMMON)
+        . = ALIGN(4);
+        PROVIDE(_ebss = .);
     }
 
     .data : {

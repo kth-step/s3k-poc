@@ -2,7 +2,7 @@
 
 .section .text.init
 _start:
+        mv      s0,ra
         call    main
-hang:
-        j       hang
+        jalr    s0
         

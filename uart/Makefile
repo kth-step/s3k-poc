@@ -1,9 +1,10 @@
 PROGRAM ?=uart
 BUILD   ?=build
 
-TARGET ?=$(ELF) $(BIN)
+TARGET ?=$(ELF) $(BIN) $(DA)
 ELF=$(BUILD)/$(PROGRAM).elf
 BIN=$(BUILD)/$(PROGRAM).bin
+DA=$(BUILD)/$(PROGRAM).da
 
 LDS=uart.lds
 
@@ -16,7 +17,7 @@ OBJCOPY=$(RISCV_PREFIX)-objcopy
 OBJDUMP=$(RISCV_PREFIX)-objdump
 SIZE=$(RISCV_PREFIX)-size
 
-CFLAGS=-T$(LDS) -nostartfiles
+CFLAGS+=-T$(LDS) -nostartfiles
 CFLAGS+=-O2 -gdwarf-2
 CFLAGS+=-fPIC -no-pie
 
@@ -46,6 +47,10 @@ $(BIN): $(ELF)
 	@mkdir -p $(@D)
 	@printf "OBJCOPY\t$@\n"
 	@$(OBJCOPY) -O binary $< $@
+
+$(DA): $(ELF)
+	@printf "OBJDUMP\t$@\n"
+	@$(OBJDUMP) -d $< > $@
 
 clean:
 	@printf "CLEAN\t$(PROGRAM)\n"

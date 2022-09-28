@@ -1,0 +1,22 @@
+
+build/uart.elf:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000000000000 <_start>:
+   0:	8406                	mv	s0,ra
+   2:	006000ef          	jal	ra,8 <main>
+   6:	9402                	jalr	s0
+
+0000000000000008 <main>:
+   8:	00000717          	auipc	a4,0x0
+   c:	02070713          	addi	a4,a4,32 # 28 <main+0x20>
+  10:	06800793          	li	a5,104
+  14:	100006b7          	lui	a3,0x10000
+  18:	00f68023          	sb	a5,0(a3) # 10000000 <main+0xffffff8>
+  1c:	00174783          	lbu	a5,1(a4)
+  20:	0705                	addi	a4,a4,1
+  22:	fbfd                	bnez	a5,18 <main+0x10>
+  24:	4501                	li	a0,0
+  26:	8082                	ret

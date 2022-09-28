@@ -1,7 +1,8 @@
 .POSIX:
 
 # Prefix of toolchain
-RISCV_PREFIX?=riscv64-unknown-elf
+export RISCV_PREFIX?=riscv64-unknown-elf
+#export CFLAGS+=-DNDEBUG
 
 # Kernel configuration file
 CONFIG_H=config.h
@@ -12,14 +13,17 @@ TARGET=separation-kernel/build/separation-kernel.elf
 PROGRAMS=uart root
 PAYLOAD=root/build/root.bin
 
-.PHONY: all clean $(KERNEL) $(PROGRAMS) qemu
+.PHONY: all clean api $(KERNEL) $(PROGRAMS) qemu
 .SECONDARY:
 
-export RISCV_PREFIX
 
 all: $(TARGET)
 
-$(PROGRAMS):
+api: 
+	@printf "MAKE\t$@\n"
+	@$(MAKE) -s -C $(KERNEL) api
+
+$(PROGRAMS): api
 	@printf "MAKE\t$@\n"
 	@$(MAKE) -s -C $@
 
