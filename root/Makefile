@@ -29,24 +29,24 @@ target: $(TARGET)
 
 $(BUILD)/%.c.o: %.c
 	@mkdir -p $(@D)
-	@echo -e "  CC\t$@"
+	@printf "  CC\t$@\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(BUILD)/%.S.o: %.S
 	@mkdir -p $(@D)
-	@echo -e "  CC\t$@"
+	@printf "  CC\t$@\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(ELF): $(OBJS) $(LDS) 
 	@mkdir -p $(@D)
-	@echo -e "  CC\t$@"
+	@printf "  CC\t$@\n"
 	@$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 $(BIN): $(ELF) 
 	@mkdir -p $(@D)
-	@echo -e "  OBJCOPY\t$@"
+	@printf "  OBJCOPY\t$@\n"
 	@$(OBJCOPY) -O binary $< $@
 
 clean:
-	@echo -e "  CLEANING"
+	@printf "  CLEANING\n"
 	@rm -f $(TARGET) $(OBJS)

@@ -18,5 +18,5 @@ $(SUBDIRS):
 	@$(MAKE) -C $@ BUILD=../$(BUILD)/$@
 
 clean:
-	@echo "  CLEANING"
+	@printf "  CLEANING\n"
 	@rm -rf $(BUILD)
