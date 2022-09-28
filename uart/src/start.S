@@ -3,8 +3,6 @@
 .section .text.init
 _start:
         call    main
-        j       payload_uart
-
 hang:
         j       hang
         

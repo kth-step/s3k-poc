@@ -1,5 +1,3 @@
-#define INIT __attribute__(".section .text.init");
-
 static inline void uart_init(void)
 {
     volatile unsigned char* uart = (volatile unsigned char*)0x10000000;
@@ -29,5 +27,5 @@ static void uart_puts(const char *c) {
 
 
 int main(void) {
-    uart_puts("hello, root\n");
+    uart_puts("hello, uart\n");
 }

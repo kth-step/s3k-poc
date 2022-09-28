@@ -1,11 +1,11 @@
-PROGRAM ?=root
+PROGRAM ?=uart
 BUILD   ?=build
 
 TARGET ?=$(ELF) $(BIN)
 ELF=$(BUILD)/$(PROGRAM).elf
 BIN=$(BUILD)/$(PROGRAM).bin
 
-LDS=root.lds
+LDS=uart.lds
 
 OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
      $(patsubst %.S, $(BUILD)/%.o, $(wildcard src/*.S))
@@ -13,14 +13,12 @@ OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
 RISCV_PREFIX?=riscv64-unknown-elf
 CC=$(RISCV_PREFIX)-gcc
 OBJCOPY=$(RISCV_PREFIX)-objcopy
-OBJDUMP=$(RISCV_PREFIX)-objdummp
+OBJDUMP=$(RISCV_PREFIX)-objdump
 SIZE=$(RISCV_PREFIX)-size
 
 CFLAGS=-T$(LDS) -nostartfiles
 CFLAGS+=-O2 -gdwarf-2
 CFLAGS+=-fPIC -no-pie
-
-PAYLOADS=../uart/build/uart.bin
 
 .PHONY: all target clean
 .SECONDARY:
@@ -34,7 +32,7 @@ $(BUILD)/%.o: %.c
 	@printf "CC\t$@\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD)/%.o: %.S $(PAYLOADS)
+$(BUILD)/%.o: %.S
 	@mkdir -p $(@D)
 	@printf "CC\t$@\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
@@ -42,7 +40,7 @@ $(BUILD)/%.o: %.S $(PAYLOADS)
 $(ELF): $(OBJS) $(LDS) 
 	@mkdir -p $(@D)
 	@printf "CC\t$@\n"
-	@$(CC) $(CFLAGS) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 $(BIN): $(ELF) 
 	@mkdir -p $(@D)

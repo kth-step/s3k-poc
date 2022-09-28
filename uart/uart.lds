@@ -8,16 +8,11 @@ SECTIONS {
         *(.text)
         *(.text.*)
     }
-
     .data : {
         PROVIDE(__global_pointer$ = . + 0x7bc);
         *(.data)
         *(.data.*)
         *(.sdata)
         *(.srodata)
-    }
-
-    .data : {
-        *(.data.payload.*)
     }
 }

@@ -9,7 +9,7 @@ CONFIG_H=config.h
 # Subdirectories
 KERNEL=separation-kernel
 TARGET=separation-kernel/build/separation-kernel.elf
-PROGRAMS=root
+PROGRAMS=uart root
 PAYLOAD=root/build/root.bin
 
 .PHONY: all clean $(KERNEL) $(PROGRAMS) qemu
