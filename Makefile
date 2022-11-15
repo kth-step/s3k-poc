@@ -5,41 +5,45 @@ export RISCV_PREFIX?=riscv64-unknown-elf
 #export CFLAGS+=-DNDEBUG
 
 # Kernel configuration file
-CONFIG_H=config.h
+export S3K_CONFIG_H=config.h
 
 # Subdirectories
-KERNEL=separation-kernel
-TARGET=separation-kernel/build/separation-kernel.elf
-PROGRAMS=uart root
-PAYLOAD=root/build/root.bin
+PROGRAMS=separation-kernel root uart monitor
+BINS=$(join $(PROGRAMS), $(patsubst %, /build/%.bin, $(PROGRAMS)))
+ELFS=$(join $(PROGRAMS), $(patsubst %, /build/%.elf, $(PROGRAMS)))
+DAS=$(join $(PROGRAMS), $(patsubst %, /build/%.da, $(PROGRAMS)))
 
-.PHONY: all clean api $(KERNEL) $(PROGRAMS) qemu
+TARGET=$(KERNEL_ELF)
+KERNEL_ELF=$(filter %separation-kernel.elf, $(ELFS))
+KERNEL_BIN=$(filter %separation-kernel.bin, $(BINS))
+ROOT_BIN=$(filter %root.bin, $(BINS))
+APP_BINS=$(filter-out $(KERNEL_BIN) $(ROOT_BIN), $(BINS))
+
+CLEAN=$(addsuffix .clean, $(PROGRAMS))
+
+.PHONY: all clean api $(CLEAN) qemu $(KERNEL) $(ROOT) $(APPLICATIONS)
 .SECONDARY:
 
 
 all: $(TARGET)
 
-api: 
-	@printf "MAKE\t$@\n"
-	@$(MAKE) -s -C $(KERNEL) api
+api:
+	$(MAKE) -s -C separation-kernel api
 
-$(PROGRAMS): api
-	@printf "MAKE\t$@\n"
-	@$(MAKE) -s -C $@
 
-$(PAYLOAD): $(PROGRAMS)
+$(APP_BINS): api
+	$(MAKE) -C $(basename $(notdir $@)) bin
 
-$(KERNEL): $(CONFIG_H) $(PAYLOAD)
-	@printf "MAKE\t$@\n"
-	@$(MAKE) -s -C $@ CONFIG_H=../$(CONFIG_H) PAYLOAD=../$(PAYLOAD) 
+$(ROOT_BIN): $(APP_BINS) api
+	$(MAKE) -C $(basename $(notdir $@)) bin
 
-$(TARGET): $(KERNEL)
+$(KERNEL_ELF): $(ROOT_BIN) $(S3K_CONFIG_H)
+	$(MAKE) -C $(basename $(notdir $@)) PAYLOAD=../$(ROOT_BIN) elf
 
-clean:
-	@for prog in $(PROGRAMS) $(KERNEL); do \
-	    $(MAKE) -s -C $$prog clean; \
-	done
+clean: $(CLEAN)
 
-qemu: $(TARGET)
-	@printf "RUN QEMU\n"
-	@./scripts/qemu.sh $(TARGET)
+$(CLEAN):
+	$(MAKE) -C $(basename $@) clean
+
+qemu: $(KERNEL_ELF)
+	./scripts/qemu.sh $(KERNEL_ELF)

@@ -9,7 +9,7 @@ SECTIONS {
         *(.text.*)
     }
     
-    .rodata : ALIGN(4) {
+    .data : ALIGN(4) {
         PROVIDE(__global_pointer$ = . + 0x7bc);
         *(.srdata)
         *(.srdata.*)

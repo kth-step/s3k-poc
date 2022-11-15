@@ -1,16 +1,16 @@
 #!/bin/env bash
-PROGRAM=$1
+KERNEL=$1
 
-if [ -z "$PROGRAM" ]; then
+if [ -z "$KERNEL" ]; then
     echo "Arg 1, program/elf, missing."
     exit 1
 fi
 
-qemu-system-riscv64 -M virt -smp 5 -m 8G -nographic -bios none -kernel $PROGRAM -s -S &
+qemu-system-riscv64 -M virt -smp 5 -m 8G -nographic -bios none -kernel $KERNEL -s -S &
 
 x-terminal-emulator -e \
 riscv64-unknown-elf-gdb \
-    -ex "symbol-file $1" \
+    -ex "symbol-file $KERNEL" \
     -ex "target remote localhost:1234" \
     -ex "b hang" \
     -ex "layout split"

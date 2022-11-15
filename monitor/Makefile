@@ -1,13 +1,11 @@
-PROGRAM ?=root
+PROGRAM ?=monitor
 BUILD   ?=build
 
 ELF=$(BUILD)/$(PROGRAM).elf
 BIN=$(BUILD)/$(PROGRAM).bin
 DA=$(BUILD)/$(PROGRAM).da
 
-LDS=root.lds
-API=../separation-kernel/api
-PLATFORM=../separation-kernel/bsp/virt.h
+LDS=default.lds
 
 OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
      $(patsubst %.S, $(BUILD)/%.o, $(wildcard src/*.S))
@@ -21,12 +19,8 @@ SIZE=$(RISCV_PREFIX)-size
 CFLAGS+=-T$(LDS) -nostartfiles
 CFLAGS+=-O2 -gdwarf-2
 CFLAGS+=-static-pie -ffreestanding
-CFLAGS+=-I$(API) -Iinc
-CFLAGS+=-include $(PLATFORM)
 
-PAYLOADS=../uart/build/uart.bin
-
-.PHONY: all clean elf bin da
+.PHONY: all target clean elf bin da
 .SECONDARY:
 
 all: elf bin da
@@ -35,22 +29,21 @@ elf: $(ELF)
 bin: $(BIN)
 da: $(DA)
 
-target: $(TARGET)
-
 $(BUILD):
-	mkdir -p $@
+	mkdir -p $(BUILD)
 
 $(BUILD)/%.o: %.c | $(BUILD)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD)/%.o: %.S $(PAYLOADS) | $(BUILD)
+$(BUILD)/%.o: %.S | $(BUILD)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(ELF): $(OBJS) $(LDS) 
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 $(BIN): $(ELF) 
-	$(OBJCOPY) -O binary $< $@
+	@printf "  OBJCOPY\t$@\n"
+	@$(OBJCOPY) -O binary $< $@
 
 $(DA): $(ELF)
 	$(OBJDUMP) -d $< > $@

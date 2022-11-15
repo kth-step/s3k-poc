@@ -1,15 +1,14 @@
 PROGRAM ?=uart
 BUILD   ?=build
 
-TARGET ?=$(ELF) $(BIN) $(DA)
 ELF=$(BUILD)/$(PROGRAM).elf
 BIN=$(BUILD)/$(PROGRAM).bin
 DA=$(BUILD)/$(PROGRAM).da
 
-LDS=uart.lds
+LDS=default.lds
 
 OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
-     $(patsubst %.S, $(BUILD)/%.o, $(wildcard src/*.S))
+	 $(patsubst %.S, $(BUILD)/%.o, $(wildcard src/*.S))
 
 RISCV_PREFIX?=riscv64-unknown-elf
 CC=$(RISCV_PREFIX)-gcc
@@ -19,39 +18,33 @@ SIZE=$(RISCV_PREFIX)-size
 
 CFLAGS+=-T$(LDS) -nostartfiles
 CFLAGS+=-O2 -gdwarf-2
-CFLAGS+=-fPIC -no-pie
+CFLAGS+=-static-pie -ffreestanding
 
-.PHONY: all target clean
+.PHONY: all target clean elf bin da
 .SECONDARY:
 
-all: target
+all: elf bin da
+elf: $(ELF)
+bin: $(BIN)
+da: $(DA)
 
-target: $(TARGET)
+$(BUILD):
+	mkdir -p $(BUILD)
 
-$(BUILD)/%.o: %.c
-	@mkdir -p $(@D)
-	@printf "CC\t$@\n"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+$(BUILD)/%.o: %.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/%.o: %.S
-	@mkdir -p $(@D)
-	@printf "CC\t$@\n"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+$(BUILD)/%.o: %.S | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ELF): $(OBJS) $(LDS) 
-	@mkdir -p $(@D)
-	@printf "CC\t$@\n"
-	$(CC) $(CFLAGS) -o $@ $(OBJS)
+$(ELF): $(OBJS) $(LDS)
+	$(CC) $(CFLAGS) $(OBJS) -o $@ 
 
 $(BIN): $(ELF) 
-	@mkdir -p $(@D)
-	@printf "OBJCOPY\t$@\n"
-	@$(OBJCOPY) -O binary $< $@
+	$(OBJCOPY) -O binary $< $@
 
 $(DA): $(ELF)
-	@printf "OBJDUMP\t$@\n"
-	@$(OBJDUMP) -d $< > $@
+	$(OBJDUMP) -d $< > $@
 
 clean:
-	@printf "CLEAN\t$(PROGRAM)\n"
-	@rm -f $(TARGET) $(OBJS)
+	rm -f $(ELF) $(BIN) $(DA) $(OBJS)
