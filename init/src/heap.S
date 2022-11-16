@@ -2,5 +2,5 @@
 .globl _eheap
 .section .bss
 _heap:
-.fill 8196 * 8
+.fill 4096 * 1
 _eheap:

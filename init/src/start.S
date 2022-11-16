@@ -1,15 +1,15 @@
 .globl _start
 
-.section .text.init
+.section .init
 _start:
 .option push
 .option norelax
-        la      gp,__global_pointer$
+        lla     gp,__global_pointer$
 .option pop
-        la      sp,stack
+        lla     sp,stack
 
-        la      t0,_bss
-        la      t1,_ebss
+        lla     t0,edata
+        lla     t1,end
         j       2f
 1:      sw      x0,(t0)
         addi    t0,t0,4
@@ -20,5 +20,5 @@ _start:
         
 
 .section .bss
-   .fill 4096 * 8
+   .fill 4096
 stack:

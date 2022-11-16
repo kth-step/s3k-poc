@@ -8,42 +8,46 @@ export RISCV_PREFIX?=riscv64-unknown-elf
 export S3K_CONFIG_H=config.h
 
 # Subdirectories
-PROGRAMS=separation-kernel root uart monitor
+ROOT=$(abspath .)
+PROGRAMS=separation-kernel init uart monitor
 BINS=$(join $(PROGRAMS), $(patsubst %, /build/%.bin, $(PROGRAMS)))
 ELFS=$(join $(PROGRAMS), $(patsubst %, /build/%.elf, $(PROGRAMS)))
-DAS=$(join $(PROGRAMS), $(patsubst %, /build/%.da, $(PROGRAMS)))
+DAS =$(join $(PROGRAMS), $(patsubst %, /build/%.da, $(PROGRAMS)))
 
 TARGET=$(KERNEL_ELF)
 KERNEL_ELF=$(filter %separation-kernel.elf, $(ELFS))
-KERNEL_BIN=$(filter %separation-kernel.bin, $(BINS))
-ROOT_BIN=$(filter %root.bin, $(BINS))
-APP_BINS=$(filter-out $(KERNEL_BIN) $(ROOT_BIN), $(BINS))
-S3K_H=separation-kernel/api/s3k.h
+INIT_BIN=$(filter %init.bin, $(BINS))
+APP_BINS=$(filter-out %init.bin %kernel.bin, $(BINS))
 
 CLEAN=$(addsuffix .clean, $(PROGRAMS))
 
-.PHONY: all clean api $(CLEAN) qemu $(KERNEL_ELF) $(ROOT_BIN) $(APPS_BINS) $(S3K_H)
+.PHONY: all clean da api $(CLEAN) qemu $(ELFS) $(BINS) $(DAS)
 .SECONDARY:
 
 
 all: $(TARGET)
 
-$(S3K_H):
-	$(MAKE) -C separation-kernel api/s3k.h
+api:
+	$(MAKE) -C separation-kernel api
 
-$(APP_BINS): $(S3K_H)
+$(APP_BINS): api
 	$(MAKE) -C $(basename $(notdir $@)) bin
 
-$(ROOT_BIN): $(APP_BINS) api
-	$(MAKE) -C $(basename $(notdir $@)) bin
+$(INIT_BIN): $(APP_BINS) api
+	$(MAKE) -C $(basename $(notdir $@)) bin 
 
-$(KERNEL_ELF): $(ROOT_BIN) $(S3K_CONFIG_H)
-	$(MAKE) -C $(basename $(notdir $@)) PAYLOAD=../$(ROOT_BIN) elf
+$(KERNEL_ELF): $(INIT_BIN) $(S3K_CONFIG_H)
+	$(MAKE) -C $(basename $(notdir $@)) PAYLOAD=$(abspath $(INIT_BIN)) elf
+
+$(DAS):
+	$(MAKE) -C $(basename $(notdir $@)) PAYLOAD=$(abspath $(INIT_BIN)) da
 
 clean: $(CLEAN)
 
 $(CLEAN):
 	$(MAKE) -C $(basename $@) clean
+
+da: $(DAS)
 
 qemu: $(KERNEL_ELF)
 	./scripts/qemu.sh $(KERNEL_ELF)
