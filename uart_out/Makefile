@@ -1,3 +1,3 @@
-PROGRAM=uart
+PROGRAM=uart_out
 
 include ../default.mk

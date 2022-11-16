@@ -14,15 +14,11 @@ SECTIONS {
     _etext = .; PROVIDE(etext = .);
     .data : ALIGN(4K) {
         _data = .;
-        *(.data*)
-        *(.rdata .rdata.*)
-        *(.rodata .rodata.*)
-        *(COMMON)
+        *(.data)
+        *(.data.*)
         _sdata = .;
-        *(.sdata .sdata.*)
-        *(.srdata .srdata.*)
-        *(.srodata .srodata*)
-        . = ALIGN(8);
+        *(.sdata)
+        *(.sdata.*)
         _edata = .;
     }
 
@@ -37,7 +33,9 @@ SECTIONS {
         _ebss = .;
     }
 
-    _sp = 16K;
+    . = ALIGN(16K) + 16K;
+    _sp = .;
+    free_space = .;
 
     __global_pointer$ = MIN(_sdata + 0x800, MAX(_data + 0x800, _ebss - 0x800));
 }

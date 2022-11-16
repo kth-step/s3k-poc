@@ -1,24 +1,28 @@
 .globl _start
 
+.extern payloads
+
+.globl free_space
+
 .section .init
 _start:
-.option push
-.option norelax
-        lla     gp,__global_pointer$
-.option pop
-        lla     sp,stack
-
-        lla     t0,edata
-        lla     t1,end
+        la      sp,stack
+        la      t0,_bss
+        la      t1,_ebss
         j       2f
-1:      sw      x0,(t0)
-        addi    t0,t0,4
-2:      bltu    t0,t1,1b
-      
-        call    main
-1:      j       1b
+1:      sd      x0,(t0)
+        addi    t0,t0,8
+2:      bne     t0,t1,1b
+
+# Fix relocations
+        la      a0,_start
+        call    payload_relocation
+2:
+        la      ra,loop
+        tail    setup
         
 
 .section .bss
    .fill 4096
 stack:
+
