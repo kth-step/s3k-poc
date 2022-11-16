@@ -1,8 +1,24 @@
 .globl _start
 
-.section .text.init
+.section .init
 _start:
-        mv      s0,ra
+.option push
+.option norelax
+        lla     gp,__global_pointer$
+.option pop
+        lla     sp,stack
+
+        lla     t0,_edata
+        lla     t1,_end
+        j       2f
+1:      sw      x0,(t0)
+        addi    t0,t0,4
+2:      bltu    t0,t1,1b
+      
         call    main
-        jalr    s0
+1:      j       1b
         
+
+.section .bss
+   .fill 4096
+stack:

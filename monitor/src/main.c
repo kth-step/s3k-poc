@@ -1,2 +1,3 @@
-int main(void) {
+void main(void) {
+    uart_puts("hello, monitor\n");
 }
