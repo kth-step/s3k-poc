@@ -1,3 +1,9 @@
+*.o
+*.da
+*.elf
+*.bin
+*.d
+
 # Prerequisites
 *.d
 

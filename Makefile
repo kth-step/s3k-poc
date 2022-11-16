@@ -18,20 +18,20 @@ KERNEL_ELF=$(filter %separation-kernel.elf, $(ELFS))
 KERNEL_BIN=$(filter %separation-kernel.bin, $(BINS))
 ROOT_BIN=$(filter %root.bin, $(BINS))
 APP_BINS=$(filter-out $(KERNEL_BIN) $(ROOT_BIN), $(BINS))
+S3K_H=separation-kernel/api/s3k.h
 
 CLEAN=$(addsuffix .clean, $(PROGRAMS))
 
-.PHONY: all clean api $(CLEAN) qemu $(KERNEL) $(ROOT) $(APPLICATIONS)
+.PHONY: all clean api $(CLEAN) qemu $(KERNEL_ELF) $(ROOT_BIN) $(APPS_BINS) $(S3K_H)
 .SECONDARY:
 
 
 all: $(TARGET)
 
-api:
-	$(MAKE) -s -C separation-kernel api
+$(S3K_H):
+	$(MAKE) -C separation-kernel api/s3k.h
 
-
-$(APP_BINS): api
+$(APP_BINS): $(S3K_H)
 	$(MAKE) -C $(basename $(notdir $@)) bin
 
 $(ROOT_BIN): $(APP_BINS) api

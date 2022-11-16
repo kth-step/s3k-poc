@@ -1,16 +1,16 @@
 PROGRAM ?=root
 BUILD   ?=build
 
-ELF=$(BUILD)/$(PROGRAM).elf
-BIN=$(BUILD)/$(PROGRAM).bin
-DA=$(BUILD)/$(PROGRAM).da
+ELF=build/$(PROGRAM).elf
+BIN=build/$(PROGRAM).bin
+DA=build/$(PROGRAM).da
 
 LDS=root.lds
 API=../separation-kernel/api
 PLATFORM=../separation-kernel/bsp/virt.h
 
-OBJS=$(patsubst %.c, $(BUILD)/%.o, $(wildcard src/*.c)) \
-     $(patsubst %.S, $(BUILD)/%.o, $(wildcard src/*.S))
+OBJS=$(patsubst src/%.c, build/%.o, $(wildcard src/*.c)) \
+     $(patsubst src/%.S, build/%.o, $(wildcard src/*.S))
 
 RISCV_PREFIX?=riscv64-unknown-elf
 CC=$(RISCV_PREFIX)-gcc
@@ -37,13 +37,13 @@ da: $(DA)
 
 target: $(TARGET)
 
-$(BUILD):
+build:
 	mkdir -p $@
 
-$(BUILD)/%.o: %.c | $(BUILD)
+build/%.o: src/%.c | build
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD)/%.o: %.S $(PAYLOADS) | $(BUILD)
+build/%.o: src/%.S $(PAYLOADS) | build
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(ELF): $(OBJS) $(LDS) 
