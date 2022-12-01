@@ -15,12 +15,10 @@ SECTIONS {
     .data : ALIGN(4K) {
         _data = .;
         *(.data*)
-        *(.rdata .rdata.*)
         *(.rodata .rodata.*)
         *(COMMON)
         _sdata = .;
         *(.sdata .sdata.*)
-        *(.srdata .srdata.*)
         *(.srodata .srodata*)
         . = ALIGN(8);
         _edata = .;

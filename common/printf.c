@@ -1,12 +1,9 @@
 #include "printf.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include "uart.h"
 
 #define PRINTF_BUF_SIZE 128
-// Max #characters in string repr. of 64-bit int (excl. '\0').
-
-__attribute__((weak)) void _puts(char *c) {
-}
 
 static inline char* outputStr(char* buf, char* ebuf, const char* s)
 {
@@ -145,6 +142,6 @@ int printf(const char *format, ...)
         va_start(ap, format);
         int ret = vsnprintf(buf, PRINTF_BUF_SIZE, format, ap);
         va_end(ap);
-        _puts(buf);
+        uart_puts(buf);
         return ret;
 }

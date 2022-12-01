@@ -31,8 +31,8 @@ void print_cap(cap_t cap)
                 printf("EMPTY{}\n");
                 break;
         case CAP_TYPE_MEMORY:
-                printf("MEMORY{begin=0x%lx,end=0x%lx,rwx=0xlx,free=0x%lx}\n", cap_memory_get_begin(cap),
-                       cap_memory_get_end(cap), cap_memory_get_free(cap), cap_memory_get_rwx(cap));
+                printf("MEMORY{begin=0x%lx,end=0x%lx,rwx=0x%lx,free=0x%lx}\n", cap_memory_get_begin(cap),
+                       cap_memory_get_end(cap), cap_memory_get_rwx(cap), cap_memory_get_free(cap));
                 break;
         case CAP_TYPE_PMP:
                 printf("PMP{addr=0x%lx,rwx=0x%lx}\n", cap_pmp_get_addr(cap), cap_pmp_get_rwx(cap));
@@ -60,9 +60,8 @@ void print_cap(cap_t cap)
         }
 }
 
-void dump_cap()
+void dump_cap(void)
 {
-        printf("\n");
         for (int i = 0; i < 20; i++) {
                 cap_t cap;
                 uint64_t code = s3k_read_cap(i, &cap);
@@ -83,10 +82,10 @@ void setup(void)
         s3k_delete_cap(6);
         s3k_yield();
 
-        cap_t uart_in_time = cap_mk_time(1, 0, 20, 0);
-        cap_t monitor_time = cap_mk_time(1, 20, 40, 20);
-        cap_t app0_time = cap_mk_time(1, 40, 60, 40);
-        cap_t uart_out_time = cap_mk_time(1, 60, 80, 60);
+        cap_t uart_in_time = cap_mk_time(1, 0, 25, 0);
+        cap_t monitor_time = cap_mk_time(1, 25, 50, 25);
+        cap_t app0_time = cap_mk_time(1, 50, 75, 50);
+        cap_t uart_out_time = cap_mk_time(1, 75, 100, 75);
         dump_cap();
         while (S3K_OK != s3k_derive_cap(3, 16, uart_in_time))
                 ;

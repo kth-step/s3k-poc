@@ -16,7 +16,7 @@ void setup(void)
         uart_puts("uart_in setup\n");
 }
 
-bool receive_msg()
+bool receive_msg(void)
 {
         for (int i = 0; i < BUF_LENGTH; i++) {
                 msg.buffer[i] = uart_getchar();
@@ -32,6 +32,8 @@ bool receive_msg()
 
 void loop(void)
 {
-        uart_puts("uart_in loop\n");
+        static int i = 0;
+        printf("%d\nuart_in loop\n", i);
+        i++;
         s3k_yield();
 }

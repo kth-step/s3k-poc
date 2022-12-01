@@ -1,3 +1,0 @@
-[submodule "separation-kernel"]
-	path = separation-kernel
-	url = git@github.com:kth-step/separation-kernel.git

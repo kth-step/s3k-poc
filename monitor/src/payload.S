@@ -37,15 +37,15 @@ payloads_end:
 
 .balign 8
 _uart_in:
-.incbin "../uart_in/build/uart_in.bin"
+.incbin "../uart_in/uart_in.bin"
 .balign 8
 _uart_out:
-.incbin "../uart_out/build/uart_out.bin"
+.incbin "../uart_out/uart_out.bin"
 .balign 8
 _app0:
-.incbin "../app0/build/app0.bin"
+.incbin "../app0/app0.bin"
 .balign 8
 _app1:
-.incbin "../app1/build/app1.bin"
+.incbin "../app1/app1.bin"
 .balign 8
 _end:
