@@ -1,6 +1,8 @@
 #include "printf.h"
+
 #include <stdbool.h>
 #include <stddef.h>
+
 #include "uart.h"
 
 #define PRINTF_BUF_SIZE 128
@@ -135,7 +137,7 @@ int snprintf(char* buf, size_t n, const char* format, ...)
         return vsnprintf(buf, n, format, args);
 }
 
-int printf(const char *format, ...) 
+int printf(const char* format, ...)
 {
         char buf[PRINTF_BUF_SIZE];
         va_list ap;

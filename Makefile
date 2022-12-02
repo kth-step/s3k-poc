@@ -1,63 +1,58 @@
 .POSIX:
-
-# Prefix of toolchain
-export RISCV_PREFIX?=riscv64-unknown-elf
-#export CFLAGS+=-DNDEBUG
-
-# Kernel configuration file
-export S3K_CONFIG_H=config.h
-
-# Subdirectories
-ROOT=$(abspath .)
-PROGRAMS=separation-kernel monitor uart_in uart_out app0 app1
-BINS=$(join $(PROGRAMS), $(patsubst %, /%.bin, $(PROGRAMS)))
-ELFS=$(join $(PROGRAMS), $(patsubst %, /%.elf, $(PROGRAMS)))
-DAS =$(join $(PROGRAMS), $(patsubst %, /%.da, $(PROGRAMS)))
-
-TARGET=$(KERNEL_ELF)
-KERNEL_ELF=$(filter %separation-kernel.elf, $(ELFS))
-MONITOR_ELF=$(filter %monitor.elf, $(ELFS))
-MONITOR_BIN=$(filter %monitor.bin, $(BINS))
-APP_BINS=$(filter-out %monitor.bin %kernel.bin, $(BINS))
-
-SIZE=$(RISCV_PREFIX)-size
-OBJCOPY=$(RISCV_PREFIX)-objcopy
-
-.PHONY: all clean format size api $(CLEAN) qemu $(ELFS) $(BINS) $(DAS)
+.PHONY: all clean qemu
 .SECONDARY:
 
-all: $(TARGET)
+S3K_PATH=../s3k
+BSP=$(S3K_PATH)/bsp/virt
+
+BUILDDIR=build
+S3K=$(BUILDDIR)/s3k.elf
+MONITOR=$(BUILDDIR)/monitor.elf
+APPS=$(patsubst %, $(BUILDDIR)/%.bin, app0 app1 uart_in uart_out)
+
+LDS=default.lds
+CONFIG_H=config.h
+
+API=$(S3K_PATH)/api
+API_H=s3k.h s3k_consts.g.h s3k_cap.g.h
+
+RISCV_PREFIX?=riscv64-unknown-elf-
+CC=$(RISCV_PREFIX)gcc
+OBJCOPY=$(RISCV_PREFIX)objcopy
+OBJDUMP=$(RISCV_PREFIX)objdump
+SIZE=$(RISCV_PREFIX)size
+
+CFLAGS+=-march=rv64imac -mabi=lp64 -mcmodel=medany
+CFLAGS+=-std=c18
+CFLAGS+=-Wall
+CFLAGS+=-O3 -gdwarf-2
+CFLAGS+=-I$(API) -Icommon -I$(BSP) -I../common
+CFLAGS+=-T$(LDS) -nostartfiles -ffreestanding -mno-relax -static-pie
+
+all: $(S3K) $(MONITOR)
+
+%.bin: %.elf
+	$(OBJCOPY) -O binary $< $@
+
+$(BUILDDIR)/%.elf: %/*.[cS] common/*.[cS] api
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) -o $@ $(filter-out api, $^)
+
+$(MONITOR): monitor/*.[cS] common/*.[cS] api $(APPS)
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) -o $@ $(filter-out api %.bin, $^)
+
+$(S3K):
+	@mkdir -p $(BUILDDIR)
+	$(MAKE) -C $(S3K_PATH) $(abspath $(S3K)) \
+		CONFIG_H=$(abspath $(CONFIG_H)) BSP=$(abspath $(BSP))
 
 api:
-	$(MAKE) -C separation-kernel api
+	$(MAKE) -C $(S3K_PATH) api
 
-$(APP_BINS): api
-	$(MAKE) -C $(basename $(notdir $@)) bin
+qemu: $(S3K) $(MONITOR)
+	./scripts/qemu.sh $(S3K) $(MONITOR)
 
-$(MONITOR_BIN): $(APP_BINS) api
-	$(MAKE) -C $(basename $(notdir $@)) PAYLOADS="$(abspath $(APP_BINS))" bin 
-
-$(KERNEL_ELF): $(MONITOR_BIN) $(S3K_CONFIG_H)
-	$(MAKE) -C $(basename $(notdir $@)) \
-		CONFIG_H="$(abspath $(S3K_CONFIG_H))" \
-		PAYLOAD="$(abspath $(MONITOR_BIN))" elf
-
-$(DAS):
-	$(MAKE) -C $(basename $(notdir $@)) da
-
-clean: 
-	for i in $(PROGRAMS); do \
-		$(MAKE) -C $$i clean; \
-	done
-
-format:
-	for i in $(PROGRAMS); do \
-		$(MAKE) -C $$i format; \
-	done
-
-size: $(ELFS)
-	$(SIZE) $(ELFS)
-
-
-qemu: $(KERNEL_ELF) $(MONITOR_ELF)
-	./scripts/qemu.sh $(KERNEL_ELF) $(MONITOR_ELF)
+clean:
+	$(MAKE) -C $(S3K_PATH) clean
+	rm -f build/*.elf build/*.bin

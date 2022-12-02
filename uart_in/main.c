@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include "printf.h"
 #include "s3k.h"
 #include "uart.h"
 

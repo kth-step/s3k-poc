@@ -6,7 +6,7 @@
 
 .section .init
 _start:
-        la      sp,stack
+        la      sp,_sp
         la      t0,_bss
         la      t1,_ebss
         j       2f
@@ -20,9 +20,4 @@ _start:
 2:
         la      ra,loop
         tail    setup
-        
-
-.section .bss
-   .fill 4096
-stack:
 

@@ -35,7 +35,10 @@ SECTIONS {
         _ebss = .;
     }
 
-    _sp = 16K;
+    . += 0x800;
+    _sp = .;
+
+    free_space = ALIGN(16K);
 
     __global_pointer$ = MIN(_sdata + 0x800, MAX(_data + 0x800, _ebss - 0x800));
 }
