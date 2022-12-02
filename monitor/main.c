@@ -91,19 +91,16 @@ void setup(void)
                 ;
         while (S3K_OK != s3k_derive_cap(3, 17, monitor_time))
                 ;
-        while (S3K_OK != s3k_derive_cap(3, 18, app0_time))
+        while (S3K_OK != s3k_derive_cap(3, 32, app0_time))
                 ;
-        while (S3K_OK != s3k_derive_cap(3, 19, uart_out_time))
+        while (S3K_OK != s3k_derive_cap(3, 18, uart_out_time))
                 ;
         dump_cap();
         printf("Give cap 16\n");
         while (S3K_OK != s3k_supervisor_move_cap(2, 1, false, 16, 1))
                 ;
         printf("Give cap 19\n");
-        while (S3K_OK != s3k_supervisor_move_cap(2, 2, false, 19, 1))
-                ;
-        printf("Give cap 18\n");
-        while (S3K_OK != s3k_supervisor_move_cap(2, 3, false, 18, 1))
+        while (S3K_OK != s3k_supervisor_move_cap(2, 2, false, 18, 1))
                 ;
 
         for (int i = 0; i < 4; i++)
@@ -111,15 +108,41 @@ void setup(void)
         s3k_supervisor_set_reg(2, 1, 0, (uint64_t)free_space[UART_IN]);
         s3k_supervisor_set_reg(2, 2, 0, (uint64_t)free_space[UART_OUT]);
         s3k_supervisor_set_reg(2, 3, 0, (uint64_t)free_space[APP0]);
+        s3k_supervisor_set_reg(2, 4, 0, (uint64_t)free_space[APP1]);
         s3k_supervisor_resume(2, 1);
         s3k_supervisor_resume(2, 2);
         s3k_supervisor_resume(2, 3);
+        s3k_supervisor_resume(2, 4);
         dump_cap();
         s3k_yield();
 }
 
 void loop(void)
 {
+        static int i = 0;
         uart_puts("monitor loop\n");
+        while (S3K_OK != s3k_revoke_cap(32));
+        cap_t time = cap_mk_time(1, 50, 75, 50);
+        while (S3K_OK != s3k_derive_cap(32,33,time));
+        if (i % 2) {
+                s3k_supervisor_suspend(2, 3);
+                uint64_t code = s3k_supervisor_move_cap(2, 3,false,33,1);
+                if (!code) {
+                        s3k_supervisor_resume(2, 3);
+                } else {
+                        printf("monitor move failed %d\n", code);
+                        s3k_yield();
+                }
+        } else {
+                s3k_supervisor_suspend(2, 4);
+                uint64_t code = s3k_supervisor_move_cap(2, 4,false,33,1);
+                if (!code) {
+                        s3k_supervisor_resume(2, 4);
+                } else {
+                        printf("monitor move failed %d\n", code);
+                        s3k_yield();
+                }
+        }
+        i++;
         s3k_yield();
 }

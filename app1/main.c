@@ -19,4 +19,5 @@ void setup(void)
 void loop(void)
 {
         uart_puts("app1 loop\n");
+        s3k_yield();
 }
