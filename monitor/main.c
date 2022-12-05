@@ -119,30 +119,5 @@ void setup(void)
 
 void loop(void)
 {
-        static int i = 0;
-        uart_puts("monitor loop\n");
-        while (S3K_OK != s3k_revoke_cap(32));
-        cap_t time = cap_mk_time(1, 50, 75, 50);
-        while (S3K_OK != s3k_derive_cap(32,33,time));
-        if (i % 2) {
-                s3k_supervisor_suspend(2, 3);
-                uint64_t code = s3k_supervisor_move_cap(2, 3,false,33,1);
-                if (!code) {
-                        s3k_supervisor_resume(2, 3);
-                } else {
-                        printf("monitor move failed %d\n", code);
-                        s3k_yield();
-                }
-        } else {
-                s3k_supervisor_suspend(2, 4);
-                uint64_t code = s3k_supervisor_move_cap(2, 4,false,33,1);
-                if (!code) {
-                        s3k_supervisor_resume(2, 4);
-                } else {
-                        printf("monitor move failed %d\n", code);
-                        s3k_yield();
-                }
-        }
-        i++;
         s3k_yield();
 }

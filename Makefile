@@ -22,7 +22,7 @@ OBJCOPY=$(RISCV_PREFIX)objcopy
 OBJDUMP=$(RISCV_PREFIX)objdump
 SIZE=$(RISCV_PREFIX)size
 
-CFLAGS+=-march=rv64imac -mabi=lp64 -mcmodel=medany
+CFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany
 CFLAGS+=-std=c18
 CFLAGS+=-Wall
 CFLAGS+=-O3 -gdwarf-2
@@ -42,7 +42,7 @@ $(MONITOR): monitor/*.[cS] common/*.[cS] api $(APPS)
 	@mkdir -p $(BUILDDIR)
 	$(CC) $(CFLAGS) -o $@ $(filter-out api %.bin, $^)
 
-$(S3K):
+$(S3K): $(CONFIG_H)
 	@mkdir -p $(BUILDDIR)
 	$(MAKE) -C $(S3K_PATH) $(abspath $(S3K)) \
 		CONFIG_H=$(abspath $(CONFIG_H)) BSP=$(abspath $(BSP))

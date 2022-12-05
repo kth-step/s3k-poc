@@ -11,7 +11,7 @@
 #define N_QUANTUM 100
 
 /* Number of communications channels */
-#define N_CHANNELS (N_PROC * (N_PROC - 1))
+#define N_CHANNELS 8
 
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
