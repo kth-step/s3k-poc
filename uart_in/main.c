@@ -7,11 +7,7 @@
 
 #define BUF_LENGTH 18
 
-typedef struct message {
-        uint8_t msg[16];
-} message_t;
-
-message_t messages[8];
+uint8_t messages[8][16];
 
 void setup(void)
 {
@@ -38,17 +34,7 @@ void loop(void)
 {
         static int i = 0;
         static uint8_t buffer[BUF_LENGTH];
-        while (true) {
-                char c = uart_getchar();
-                if (c == '\0')
-                        continue;
-                buffer[i++ % BUF_LENGTH] = c;
-
-                if (i >= BUF_LENGTH && check_buffer(i, buffer)) {
-                        for (int j = 0; j < BUF_LENGTH - 2; j++) {
-                                str[j] = buffer[(j + i) % BUF_LENGTH];
-                        }
-                        clear_buffer(i, buffer);
-                }
-        }
+        printf("%3d loop\n", i);
+        s3k_yield();
+        i++;
 }
