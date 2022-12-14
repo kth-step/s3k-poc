@@ -9,6 +9,8 @@ import curses
 import threading
 import socket
 import time
+import sys
+import shlex
 
 class Receiver(threading.Thread):
     def __init__(self, sock, log_queue):
@@ -22,7 +24,7 @@ class Receiver(threading.Thread):
         line = b""
         while True:
             data = self.sock.recv(256)
-            data = data.split(b"\0")
+            data = data.split(b"\n")
             if len(data) == 1:
                 line += data[0]
             else:
@@ -40,29 +42,34 @@ class Sender(threading.Thread):
         self.log_queue = log_queue
         self.cmd_queue = cmd_queue
 
+    def get_msg(self):
+        while True:
+            cmd = self.cmd_queue.get(block=True)
+            try:
+                args = shlex.split(cmd)
+            except ValueError:
+                return ('Invalid command', None)
+            if args[0] == 'send' and len(args) == 2:
+                return (f'{args[0]} "{args[1]}"', args[1])
+            elif args[0] == 'load-binary' and len(args) == 2:
+                file = args[1]
+                return (f'{args[0]} {args[1]}', args[1])
+            else:
+                return ('Invalid command', None)
+
+
     def run(self):
         while True:
-            data = self.cmd_queue.get(block=True)
-            data = data.encode('ASCII')
-            i = 0
-            j = len(data)
-            while i < j:
-                # sock.send returns number of bytes sent,
-                # we repeat until all data has been sent
-                i += self.sock.send(data[i:j])
-            self.log_queue.put("> Sent data")
+            (cmd, data) = self.get_msg()
+            if data:
+                self.sock.sendall(data.encode('ASCII') + b'\n')
+            self.log_queue.put(f"> {cmd}")
 
-class Interface(threading.Thread):
+class Interface:
     def __init__(self, win, log_queue, cmd_queue):
-        threading.Thread.__init__(self)
         self.win = win
-        height, width = self.win.getmaxyx()
-        output_height = height -2
-        input_height = 1
-        self.output_win = win.subwin(output_height, width, 0, 0)
-        self.input_win = win.subwin(input_height, width, output_height, 0)
-        self.input_win.keypad(True)
-        self.input_win.nodelay(True)
+        self.win.keypad(True)
+        self.win.nodelay(True)
         self.log_queue = log_queue
         self.cmd_queue = cmd_queue
         self.daemon = False
@@ -74,30 +81,24 @@ class Interface(threading.Thread):
         self.input_idx = 0
 
     def handle_output(self):
-        height, width = self.output_win.getmaxyx()
-        updated = False
-        try:
-            while True:
+        while True:
+            try:
                 item = self.log_queue.get(block=False)
-                updated = True
                 self.outputs.append(item)
-        except:
-            pass
-        if updated:
-            self.outputs = self.outputs[-(height - 2):]
-            self.output_win.clear()
-            for i, line in enumerate(self.outputs):
-                self.output_win.addstr(i+1, 1, line)
-            self.output_win.border()
-            self.output_win.refresh()
+            except QueueEmpty:
+                break
+        height, width = self.win.getmaxyx()
+        self.outputs = self.outputs[-(height - 3):]
+        for i, line in enumerate(self.outputs):
+            self.win.addstr(i, 1, line)
 
     def handle_input(self):
         try:
-            key = self.input_win.getkey()
+            key = self.win.getkey()
             if key == "\n":
                 if self.input:
                     self.inputs.append(self.input)
-                    self.cmd_queue.put(self.input + '\0')
+                    self.cmd_queue.put(self.input + '\n')
                     self.input = ""
                     self.input_old = ""
                     self.input_idx = 0
@@ -119,19 +120,15 @@ class Interface(threading.Thread):
                 self.input = self.input[0:len(self.input)-1]
         except:
             pass
-        self.input_win.clear()
-        self.input_win.addstr(0, 0, " > " + self.input)
-        self.input_win.refresh()
+        height, width = self.win.getmaxyx()
+        self.win.addstr(height-2, 0, "-" * (width-1))
+        self.win.addstr(height-1, 0, " > " + self.input)
 
-    def run(self):
-        self.output_win.border()
-        self.input_win.addstr(0, 0, "> ")
-        self.output_win.refresh()
-        self.input_win.refresh()
-        while True:
-            self.handle_output()
-            self.handle_input()
-            time.sleep(1/30)
+    def update(self):
+        self.win.clear()
+        self.handle_output()
+        self.handle_input()
+        self.win.refresh()
 
 
 def main(stdscr, ip_addr, port):
@@ -151,7 +148,9 @@ def main(stdscr, ip_addr, port):
         interface = Interface(stdscr, log_queue, cmd_queue)
         receiver.start()
         sender.start()
-        interface.run()
+        while receiver.is_alive() and sender.is_alive():
+            interface.update()
+            time.sleep(1/30)
 
 
 if __name__ == "__main__":

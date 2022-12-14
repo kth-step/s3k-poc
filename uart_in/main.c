@@ -35,7 +35,8 @@ void loop(void)
         while (true) {
                 char c = uart_getchar();
                 buffer[i++] = c;
-                if (c == '\0') {
+                if (c == '\n') {
+                        buffer[i++] = '\0';
                         uart_puts(buffer);
                         i = 0;
                 }
