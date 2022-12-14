@@ -82,10 +82,10 @@ void setup(void)
         s3k_delete_cap(6);
         s3k_yield();
 
-        cap_t uart_in_time = cap_mk_time(1, 0, 25, 0);
-        cap_t monitor_time = cap_mk_time(1, 25, 50, 25);
-        cap_t app0_time = cap_mk_time(1, 50, 75, 50);
-        cap_t uart_out_time = cap_mk_time(1, 75, 100, 75);
+        cap_t uart_in_time = cap_mk_time(1, 0, 1, 0);
+        cap_t monitor_time = cap_mk_time(1, 1, 2, 1);
+        cap_t app0_time = cap_mk_time(1, 2, 3, 2);
+        cap_t uart_out_time = cap_mk_time(1, 3, 4, 3);
         dump_cap();
         while (S3K_OK != s3k_derive_cap(3, 16, uart_in_time))
                 ;

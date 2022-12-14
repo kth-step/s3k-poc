@@ -5,9 +5,7 @@
 #include "s3k.h"
 #include "uart.h"
 
-#define BUF_LENGTH 18
-
-uint8_t messages[8][16];
+#define BUF_LENGTH 256
 
 void setup(void)
 {
@@ -34,7 +32,12 @@ void loop(void)
 {
         static int i = 0;
         static uint8_t buffer[BUF_LENGTH];
-        printf("%3d loop\n", i);
-        s3k_yield();
-        i++;
+        while (true) {
+                char c = uart_getchar();
+                buffer[i++] = c;
+                if (c == '\0') {
+                        uart_puts(buffer);
+                        i = 0;
+                }
+        }
 }
