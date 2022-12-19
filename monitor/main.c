@@ -1,123 +1,29 @@
-#include <stdbool.h>
-#include <stdint.h>
-
+#include "payload.h"
 #include "printf.h"
-#include "s3k.h"
-#include "uart.h"
+#include "util.h"
 
-#define UART_IN 0
-#define UART_OUT 1
-#define APP0 2
-#define APP1 3
+#define SLOTS 8
 
-struct payload {
-        uint8_t* begin;
-        uint8_t* end;
-};
+char* alloc[SLOTS];
 
-extern struct payload payloads[4];
-extern uint8_t free_space[8][16384];
-extern void payload_load(uint8_t*, uint8_t*, uint8_t*);
-
-void _puts(char* c)
+void init_alloc(void)
 {
-        uart_puts(c);
+        extern char _end[];
+        for (int i = 0; i < SLOTS; i++)
+                alloc[i] = _end + i * 16384;
+}
+void init_bin(void)
+{
+        memcpy(alloc[0], uart_bin_begin, (int)(uart_bin_end - uart_bin_begin));
+        memcpy(alloc[1], app0_bin_begin, (int)(app0_bin_end - app0_bin_begin));
+        memcpy(alloc[2], app1_bin_begin, (int)(app1_bin_end - app1_bin_begin));
 }
 
-void print_cap(cap_t cap)
+typedef void (*void_fun_t)(void);
+
+void main(void)
 {
-        switch (cap_get_type(cap)) {
-        case CAP_TYPE_EMPTY:
-                printf("EMPTY{}\n");
-                break;
-        case CAP_TYPE_MEMORY:
-                printf("MEMORY{begin=0x%lx,end=0x%lx,rwx=0x%lx,free=0x%lx}\n", cap_memory_get_begin(cap),
-                       cap_memory_get_end(cap), cap_memory_get_rwx(cap), cap_memory_get_free(cap));
-                break;
-        case CAP_TYPE_PMP:
-                printf("PMP{addr=0x%lx,rwx=0x%lx}\n", cap_pmp_get_addr(cap), cap_pmp_get_rwx(cap));
-                break;
-        case CAP_TYPE_TIME:
-                printf("TIME{hartid=%ld,begin=%ld,end=%ld,free=%ld}\n", cap_time_get_hartid(cap),
-                       cap_time_get_begin(cap), cap_time_get_end(cap), cap_time_get_free(cap));
-                break;
-        case CAP_TYPE_CHANNELS:
-                printf("CHANNELS{begin=0x%lx,end=0x%lx,free=0x%lx}\n", cap_channels_get_begin(cap),
-                       cap_channels_get_end(cap), cap_channels_get_free(cap));
-                break;
-        case CAP_TYPE_RECEIVER:
-                printf("RECEIVER{}\n");
-                break;
-        case CAP_TYPE_SENDER:
-                printf("SENDER{}\n");
-                break;
-        case CAP_TYPE_SUPERVISOR:
-                printf("SUPERVISOR{begin=%ld,end=%ld,free=%ld}\n", cap_supervisor_get_begin(cap),
-                       cap_supervisor_get_end(cap), cap_supervisor_get_free(cap));
-                break;
-        default:
-                printf("Unknown\n");
-        }
-}
-
-void dump_cap(void)
-{
-        for (int i = 0; i < 20; i++) {
-                cap_t cap;
-                uint64_t code = s3k_read_cap(i, &cap);
-                if (code == S3K_OK && cap.word0) {
-                        printf("%2d: ", i);
-                        print_cap(cap);
-                }
-        }
-}
-
-void setup(void)
-{
-        uart_puts("monitor setup\n");
-        dump_cap();
-
-        s3k_delete_cap(4);
-        s3k_delete_cap(5);
-        s3k_delete_cap(6);
-        s3k_yield();
-
-        cap_t uart_in_time = cap_mk_time(1, 0, 1, 0);
-        cap_t monitor_time = cap_mk_time(1, 1, 2, 1);
-        cap_t app0_time = cap_mk_time(1, 2, 3, 2);
-        cap_t uart_out_time = cap_mk_time(1, 3, 4, 3);
-        dump_cap();
-        while (S3K_OK != s3k_derive_cap(3, 16, uart_in_time))
-                ;
-        while (S3K_OK != s3k_derive_cap(3, 17, monitor_time))
-                ;
-        while (S3K_OK != s3k_derive_cap(3, 32, app0_time))
-                ;
-        while (S3K_OK != s3k_derive_cap(3, 18, uart_out_time))
-                ;
-        dump_cap();
-        printf("Give cap 16\n");
-        while (S3K_OK != s3k_supervisor_move_cap(2, 1, false, 16, 1))
-                ;
-        printf("Give cap 19\n");
-        while (S3K_OK != s3k_supervisor_move_cap(2, 2, false, 18, 1))
-                ;
-
-        for (int i = 0; i < 4; i++)
-                payload_load(payloads[i].begin, payloads[i].end, free_space[i]);
-        s3k_supervisor_set_reg(2, 1, 0, (uint64_t)free_space[UART_IN]);
-        s3k_supervisor_set_reg(2, 2, 0, (uint64_t)free_space[UART_OUT]);
-        s3k_supervisor_set_reg(2, 3, 0, (uint64_t)free_space[APP0]);
-        s3k_supervisor_set_reg(2, 4, 0, (uint64_t)free_space[APP1]);
-        s3k_supervisor_resume(2, 1);
-        s3k_supervisor_resume(2, 2);
-        s3k_supervisor_resume(2, 3);
-        s3k_supervisor_resume(2, 4);
-        dump_cap();
-        s3k_yield();
-}
-
-void loop(void)
-{
-        s3k_yield();
+        init_alloc();
+        init_bin();
+        ((void_fun_t)alloc[0])();
 }

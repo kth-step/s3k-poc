@@ -24,12 +24,8 @@ function cleanup() {
 
 trap cleanup EXIT
 
-if [ ! -p myfifo ]; then
-        mkfifo myfifo
-fi
-
 qemu-system-riscv64 -M virt -smp 5 -m 8G -nographic -bios none -kernel $KERNEL \
-        -device loader,file=$TMPBIN,addr=0x80010000 -s -S \
+        -device loader,file=$TMPBIN,addr=0x80010000 -s -S                      \
         -serial tcp:localhost:4321,server,nowait &
 
 x-terminal-emulator -e                                  \
@@ -37,10 +33,10 @@ riscv64-unknown-elf-gdb                                 \
         -ex "set confirm off"                           \
         -ex "set pagination off"                        \
         -ex "symbol-file $KERNEL"                       \
-        -ex "add-symbol-file $PAYLOAD -o _payload"      \
+        -ex "add-symbol-file $PAYLOAD -o 0x80010000"    \
         -ex "j 0x80000000"                              \
         -ex "b hang"                                    \
-        -ex "b _payload"                                \
+        -ex "b *0x80010000"                             \
         -ex "target remote localhost:1234"              \
         -ex "layout split"                              \
         -ex "fs cmd"

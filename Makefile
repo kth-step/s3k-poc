@@ -1,58 +1,67 @@
 .POSIX:
-.PHONY: all clean qemu
-.SECONDARY:
+.PHONY: all clean qemu build/s3k.elf
 
-S3K_PATH=../s3k
-BSP=$(S3K_PATH)/bsp/virt
-
-BUILDDIR=build
-S3K=$(BUILDDIR)/s3k.elf
-MONITOR=$(BUILDDIR)/monitor.elf
-APPS=$(patsubst %, $(BUILDDIR)/%.bin, app0 app1 uart_in uart_out)
-
-LDS=default.lds
-CONFIG_H=config.h
-
-API=$(S3K_PATH)/api
-API_H=s3k.h s3k_consts.g.h s3k_cap.g.h
-
-RISCV_PREFIX?=riscv64-unknown-elf-
 CC=$(RISCV_PREFIX)gcc
+AS=$(RISCV_PREFIX)as
 OBJCOPY=$(RISCV_PREFIX)objcopy
 OBJDUMP=$(RISCV_PREFIX)objdump
-SIZE=$(RISCV_PREFIX)size
 
-CFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany
-CFLAGS+=-std=c18
-CFLAGS+=-Wall
-CFLAGS+=-O3 -gdwarf-2
-CFLAGS+=-I$(API) -Icommon -I$(BSP) -I../common
-CFLAGS+=-T$(LDS) -nostartfiles -ffreestanding -mno-relax -static-pie
+CFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medlow
+CFLAGS+=-std=c17 -MMD
+CFLAGS+=-g -O3 -fPIE -static -Wl,--no-dynamic-linker
+CFLAGS+=-nostartfiles -nostdlib -Icommon/inc -ffreestanding
+CFLAGS+=-Tdefault.lds
 
-all: $(S3K) $(MONITOR)
+MONITOR_SRCS=monitor/main.c monitor/payload.S common/start.S common/printf.c
+MONITOR_OBJS=$(patsubst %, build/%.o, $(MONITOR_SRCS))
+MONITOR_DEPS=$(MONITOR_OBJS:.o=.d)
+
+UART_SRCS=uart/main.c common/start.S uart/ppp.c common/printf.c
+UART_OBJS=$(patsubst %, build/%.o, $(UART_SRCS))
+UART_DEPS=$(UART_OBJS:.o=.d)
+
+APP0_SRCS=app0/main.c common/start.S
+APP0_OBJS=$(patsubst %, build/%.o, $(APP0_SRCS))
+APP0_DEPS=$(APP0_OBJS:.o=.d)
+
+APP1_SRCS=app1/main.c common/start.S
+APP1_OBJS=$(patsubst %, build/%.o, $(APP1_SRCS))
+APP1_DEPS=$(APP1_OBJS:.o=.d)
+
+
+all: build/s3k.elf build/monitor.elf build/s3k.da build/monitor.da 
+clean:
+	rm -fr build
+
+qemu: build/s3k.elf build/monitor.elf
+	./scripts/qemu.sh $^
+
+build/monitor.elf: $(MONITOR_OBJS) default.lds
+build/uart.elf: $(UART_OBJS) default.lds
+build/app0.elf: $(APP0_OBJS) default.lds
+build/app1.elf: $(APP1_OBJS) default.lds
+
+build/s3k.elf:
+	$(MAKE) -C ../s3k BUILD=$(abspath build) CONFIG_H=$(abspath config.h)
+
+%.elf:
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS)    -o $@ $(filter %.o, $^)
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@
 
-$(BUILDDIR)/%.elf: %/*.[cS] common/*.[cS] api
-	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) -o $@ $(filter-out api, $^)
+%.da: %.elf
+	$(OBJDUMP) -d $< > $@
 
-$(MONITOR): monitor/*.[cS] common/*.[cS] api $(APPS)
-	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) -o $@ $(filter-out api %.bin, $^)
+build/monitor/payload.S.o: monitor/payload.S build/uart.bin build/app0.bin build/app1.bin
 
-$(S3K): $(CONFIG_H)
-	@mkdir -p $(BUILDDIR)
-	$(MAKE) -C $(S3K_PATH) $(abspath $(S3K)) \
-		CONFIG_H=$(abspath $(CONFIG_H)) BSP=$(abspath $(BSP))
+build/%.S.o: %.S
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS)    -c -o $@ $<
 
-api:
-	$(MAKE) -C $(S3K_PATH) api
+build/%.c.o: %.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS)    -c -o $@ $<
 
-qemu: $(S3K) $(MONITOR)
-	./scripts/qemu.sh $(S3K) $(MONITOR)
-
-clean:
-	$(MAKE) -C $(S3K_PATH) clean
-	rm -f build/*.elf build/*.bin
+-include $(MONITOR_DEPS) $(UART_DEPS) $(APP0_DEPS) $(APP1_DEPS)

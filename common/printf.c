@@ -1,149 +1,154 @@
+// See LICENSE file for copyright and license details.
 #include "printf.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "uart.h"
 
-#define PRINTF_BUF_SIZE 128
-
-static inline char* outputStr(char* buf, char* ebuf, const char* s)
+int write(const char* buf, int nbytes)
 {
-        while (buf != ebuf && *s != '\0') {
-                *buf++ = *s++;
-        }
-        return buf;
+        int i = uart_write(buf, nbytes);
+        return i;
 }
 
-static inline char* output64(char* buf, char* ebuf, long long n, int sig, int base, char padding, int padd_width)
+int puts(const char* s)
 {
-        char buff[32];
-        buff[31] = '\0';
-        unsigned long long i = n;
-        int neg = 0;
-        if (n < 0 && sig) {
-                padd_width--;
-                neg = 1;
-                i = -n;
-        }
-        char* c = &buff[31];
+        int i = uart_puts(s);
+        return i;
+}
+
+int printf(const char* restrict format, ...)
+{
+        va_list args;
+        char buf[256];
+        va_start(args, format);
+        int len = vsnprintf(buf, 256, format, args);
+        va_end(args);
+        return write(buf, len);
+}
+
+static inline void outputStr(char* buf, int* j, int nbytes, const char* s, char padding, int padd_width)
+{
+        int len;
+        for (len = 0; s[len] != '\0'; len++)
+                ;
+        padd_width -= len;
+        for (int i = 0; i < padd_width; i++)
+                buf[(*j)++] = padding;
+
+        while (*s != '\0' && *j < nbytes)
+                buf[(*j)++] = *s++;
+}
+
+static inline void outputNum(char* buf, int* j, int nbytes, unsigned long long num, bool neg, int base, char padding,
+                             int padd_width)
+{
+        char nbuf[64];
+        nbuf[63] = '\0';
+        int i = 63;
         do {
-                unsigned long long j = i % base;
-                if (j >= 10)
-                        *--c = 'a' + j - 10;
+                unsigned long long tmp = num % base;
+                if (tmp >= 10)
+                        nbuf[--i] = 'a' + tmp - 10;
                 else
-                        *--c = '0' + j;
-                i /= base;
-                padd_width--;
-        } while (i != 0);
-        while (padd_width > 0) {
-                *--c = padding;
-                padd_width--;
-        }
-        if (neg) {
-                *--c = '-';
-        }
-        return outputStr(buf, ebuf, c);
+                        nbuf[--i] = '0' + tmp;
+                num /= base;
+        } while (num != 0);
+
+        if (neg && *j < nbytes && padding == '0')
+                buf[(*j)++] = '-';
+        else if (neg && padding == ' ')
+                nbuf[--i] = '-';
+
+        outputStr(buf, j, nbytes, &nbuf[i], padding, padd_width);
 }
 
-static inline char* output32(char* buf, char* ebuf, int n, bool sig, int base, char padding, int padd_width)
+int vsnprintf(char* buf, size_t nbytes, const char* format, va_list args)
 {
-        char buff[16];
-        buff[15] = '\0';
-        unsigned int i = n;
-        bool neg = 0;
-        if (n < 0 && sig) {
-                padd_width--;
-                neg = 1;
-                i = -n;
-        }
-        char* c = &buff[15];
-        do {
-                unsigned int j = i % base;
-                if (j >= 10)
-                        *--c = 'a' + j - 10;
-                else
-                        *--c = '0' + j;
-                i /= base;
-                padd_width--;
-        } while (i != 0);
-        while (padd_width > 0) {
-                *--c = padding;
-                padd_width--;
-        }
-        if (neg) {
-                *--c = '-';
-        }
-        return outputStr(buf, ebuf, c);
-}
-
-int vsnprintf(char* buf, size_t n, const char* format, va_list args)
-{
-        if (n == 0)
+        if (nbytes == 0)
                 return 0;
-        char* ebuf = buf + n - 1;
-        for (const char* f = format; *f != '\0' && buf != ebuf; ++f) {
-                if (*f != '%') {
-                        *(buf++) = *f;
+        nbytes = nbytes - 1;
+        int i = 0, f = 0;
+        while (format[f] != '\0' && i < nbytes) {
+                if (format[f] != '%') {
+                        buf[i++] = format[f++];
                         continue;
                 }
                 f++;
                 char padding = ' ';
                 int padd_width = 0;
-                if (*f == '0') {
+                if (format[f] == '0') {
                         padding = '0';
                         f++;
                 }
-                while (*f >= '0' && *f <= '9') {
+                while (format[f] >= '0' && format[f] <= '9') {
                         padd_width *= 10;
-                        padd_width += *f - '0';
+                        padd_width += format[f] - '0';
                         f++;
                 }
-                if (*f == 'd') {
-                        buf = output32(buf, ebuf, va_arg(args, int), true, 10, padding, padd_width);
-                } else if (*f == 'u') {
-                        buf = output32(buf, ebuf, va_arg(args, int), false, 10, padding, padd_width);
-                } else if (*f == 'x') {
-                        buf = output32(buf, ebuf, va_arg(args, int), false, 1, padding, padd_width);
-                } else if (*f == 's') {
-                        buf = outputStr(buf, ebuf, va_arg(args, char*));
-                } else if (*f == 'c') {
-                        *(buf++) = va_arg(args, int);
-                } else if (*f == '%') {
-                        *(buf++) = '%';
-                } else if (*f == 'l') {
-                        f++;
-                        if (*f == 'd') {
-                                buf = output64(buf, ebuf, va_arg(args, long long), true, 10, padding, padd_width);
-                        } else if (*f == 'u') {
-                                buf = output64(buf, ebuf, va_arg(args, long long), false, 10, padding, padd_width);
-                        } else if (*f == 'x') {
-                                buf = output64(buf, ebuf, va_arg(args, long long), false, 16, padding, padd_width);
-                        } else {
+                switch (format[f++]) {
+                case 'd': {
+                        long long num = va_arg(args, int);
+                        bool neg = num < 0;
+                        num = neg ? -num : num;
+                        outputNum(buf, &i, nbytes, 0xFFFFFFFF & num, neg, 10, padding, padd_width);
+                        break;
+                }
+                case 'u':
+                        outputNum(buf, &i, nbytes, 0xFFFFFFFF & va_arg(args, int), false, 10, padding, padd_width);
+                        break;
+                case 'o':
+                        outputNum(buf, &i, nbytes, 0xFFFFFFFF & va_arg(args, int), false, 8, padding, padd_width);
+                        break;
+                case 'x':
+                        outputNum(buf, &i, nbytes, 0xFFFFFFFF & va_arg(args, int), false, 16, padding, padd_width);
+                        break;
+                case 's':
+                        outputStr(buf, &i, nbytes, va_arg(args, char*), ' ', padd_width);
+                        break;
+                case 'c':
+                        buf[i] = va_arg(args, int);
+                        break;
+                case '%':
+                        buf[i] = '%';
+                        break;
+                case 'l':
+                        switch (format[f++]) {
+                        case 'd': {
+                                long long num = va_arg(args, long);
+                                bool neg = num < 0;
+                                num = neg ? -num : num;
+                                outputNum(buf, &i, nbytes, num, neg, 10, padding, padd_width);
+                                break;
+                        }
+                        case 'u':
+                                outputNum(buf, &i, nbytes, va_arg(args, unsigned long), false, 10, padding, padd_width);
+                                break;
+                        case 'o':
+                                outputNum(buf, &i, nbytes, va_arg(args, unsigned long), false, 8, padding, padd_width);
+                                break;
+                        case 'x':
+                                outputNum(buf, &i, nbytes, va_arg(args, unsigned long), false, 16, padding, padd_width);
+                                break;
+                        default:
                                 __builtin_unreachable();
                         }
-                } else {
+                        break;
+                default:
                         __builtin_unreachable();
                 }
         }
-        *buf = '\0';
-        return (ebuf - buf);
+        return i;
 }
 
 int snprintf(char* buf, size_t n, const char* format, ...)
 {
         va_list args;
         va_start(args, format);
-        return vsnprintf(buf, n, format, args);
-}
-
-int printf(const char* format, ...)
-{
-        char buf[PRINTF_BUF_SIZE];
-        va_list ap;
-        va_start(ap, format);
-        int ret = vsnprintf(buf, PRINTF_BUF_SIZE, format, ap);
-        va_end(ap);
-        uart_puts(buf);
-        return ret;
+        int len = vsnprintf(buf, n, format, args);
+        va_end(args);
+        return len;
 }

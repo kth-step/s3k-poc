@@ -11,6 +11,13 @@ import socket
 import time
 import sys
 import shlex
+import string
+
+def ppp_encode(data):
+    data = bytearray(data)
+    data = data.replace(b"|", b"|\\")
+    data = data.replace(b"}", b"|]")
+    return b"}" + data + b"}"
 
 class Receiver(threading.Thread):
     def __init__(self, sock, log_queue):
@@ -24,14 +31,15 @@ class Receiver(threading.Thread):
         line = b""
         while True:
             data = self.sock.recv(256)
-            data = data.split(b"\n")
+            data = data.split(b"}")
             if len(data) == 1:
                 line += data[0]
             else:
                 data[0] = line + data[0]
                 line = data[-1]
             for byte in data[0:-1]:
-                self.log.put(">> " + byte.decode('ASCII').strip())
+                if byte:
+                    self.log.put(bytes([i if i in bytes(string.printable, 'ascii') else 46 for i in byte]))
 
 class Sender(threading.Thread):
     def __init__(self, sock, log_queue, cmd_queue):
@@ -42,28 +50,29 @@ class Sender(threading.Thread):
         self.log_queue = log_queue
         self.cmd_queue = cmd_queue
 
-    def get_msg(self):
-        while True:
-            cmd = self.cmd_queue.get(block=True)
-            try:
-                args = shlex.split(cmd)
-            except ValueError:
-                return ('Invalid command', None)
-            if args[0] == 'send' and len(args) == 2:
-                return (f'{args[0]} "{args[1]}"', args[1])
-            elif args[0] == 'load-binary' and len(args) == 2:
-                file = args[1]
-                return (f'{args[0]} {args[1]}', args[1])
-            else:
-                return ('Invalid command', None)
-
+    def parse_command(self,cmd):
+        args = shlex.split(cmd)
+        if args[0] == 'send' and len(args) == 2:
+            return args[1].encode('ASCII')
+        elif args[0] == 'load-binary' and len(args) == 3:
+            with open(args[2], 'rb') as f:
+                return int(args[1]).to_bytes(4, 'little') + f.read()
+        else:
+            return None
 
     def run(self):
         while True:
-            (cmd, data) = self.get_msg()
-            if data:
-                self.sock.sendall(data.encode('ASCII') + b'\n')
-            self.log_queue.put(f"> {cmd}")
+            try:
+                cmd = self.cmd_queue.get(block=True)
+                self.log_queue.put(f"> {cmd}")
+                data = self.parse_command(cmd)
+                if data:
+                    self.sock.sendall(ppp_encode(data))
+                else:
+                    self.log_queue.put("Invalid command")
+            except Exception as e:
+                self.log_queue.put(f"{e}")
+
 
 class Interface:
     def __init__(self, win, log_queue, cmd_queue):
@@ -90,7 +99,7 @@ class Interface:
         height, width = self.win.getmaxyx()
         self.outputs = self.outputs[-(height - 3):]
         for i, line in enumerate(self.outputs):
-            self.win.addstr(i, 1, line)
+            self.win.addstr(i, 1, line[:width-1])
 
     def handle_input(self):
         try:
@@ -98,7 +107,7 @@ class Interface:
             if key == "\n":
                 if self.input:
                     self.inputs.append(self.input)
-                    self.cmd_queue.put(self.input + '\n')
+                    self.cmd_queue.put(self.input)
                     self.input = ""
                     self.input_old = ""
                     self.input_idx = 0
@@ -107,11 +116,11 @@ class Interface:
             elif key == "KEY_UP":
                 if self.input_idx == 0:
                     self.input_old = self.input
-                self.input_idx = min(self.input_idx+1, len(self.inputs)-1)
+                self.input_idx = min(self.input_idx+1, len(self.inputs))
                 if self.input_idx > 0:
                     self.input = self.inputs[-self.input_idx]
             elif key == "KEY_DOWN":
-                self.input_idx = max(self.input_idx-1, 0)
+                self.input_idx = max(self.input_idx, 0)
                 if self.input_idx == 0:
                     self.input = self.input_old
                 else:
