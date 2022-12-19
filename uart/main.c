@@ -1,7 +1,7 @@
 #include "ppp.h"
 #include "util.h"
 
-#define BUF_SIZE 4096
+#define BUF_SIZE 256
 
 void main(void)
 {

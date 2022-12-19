@@ -19,6 +19,7 @@ int ppp_send(const char* restrict buf, int length)
                 switch (buf[i]) {
                 case PPP_ESCAPE:
                 case PPP_SEQ:
+                case '-':
                         /* Escape control character */
                         uart_putchar(PPP_ESCAPE);
                         uart_putchar(buf[i] ^ PPP_COMP);
