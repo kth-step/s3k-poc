@@ -1,6 +1,7 @@
 .POSIX:
 .PHONY: all clean qemu build/s3k.elf
 
+RISCV_PREFIX?=riscv64-unknown-elf-
 CC=$(RISCV_PREFIX)gcc
 AS=$(RISCV_PREFIX)as
 OBJCOPY=$(RISCV_PREFIX)objcopy
