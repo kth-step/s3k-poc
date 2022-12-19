@@ -15,9 +15,9 @@ import string
 
 def ppp_encode(data):
     data = bytearray(data)
-    data = data.replace(b"|", b"|\\")
-    data = data.replace(b"}", b"|]")
-    return b"}" + data + b"}"
+    data = data.replace(b"\\", b"\\|")
+    data = data.replace(b"\n", b"\\*")
+    return b"\n" + data + b"\n"
 
 class Receiver(threading.Thread):
     def __init__(self, sock, log_queue):
@@ -31,15 +31,18 @@ class Receiver(threading.Thread):
         line = b""
         while True:
             data = self.sock.recv(256)
-            data = data.split(b"}")
+            data = data.split(b"\n")
             if len(data) == 1:
                 line += data[0]
             else:
                 data[0] = line + data[0]
                 line = data[-1]
             for byte in data[0:-1]:
+                text = bytes([i if i in bytes(string.printable, 'ascii') else 46 for i in byte])
+                text = text.replace(b'\\|', b'\\')
+                text = text.replace(b'\\*', b'\\n')
                 if byte:
-                    self.log.put(bytes([i if i in bytes(string.printable, 'ascii') else 46 for i in byte]))
+                    self.log.put(text)
 
 class Sender(threading.Thread):
     def __init__(self, sock, log_queue, cmd_queue):
@@ -52,11 +55,16 @@ class Sender(threading.Thread):
 
     def parse_command(self,cmd):
         args = shlex.split(cmd)
-        if args[0] == 'send' and len(args) == 2:
-            return args[1].encode('ASCII')
-        elif args[0] == 'load-binary' and len(args) == 3:
-            with open(args[2], 'rb') as f:
-                return int(args[1]).to_bytes(4, 'little') + f.read()
+        if args[0] == 'send' and len(args) == 3 and len(args[1]) <= 8:
+            receiver = args[1].rjust(8).encode('ascii')
+            data = args[2].encode('ascii')
+            return receiver + b":" + data
+        elif args[0] == 'send-file' and len(args) == 3 and len(args[1]) <= 8:
+            receiver = args[1].rjust(8).encode('ascii')
+            filename = args[2]
+            with open(filename, 'rb') as file:
+                data = file.read()
+            return receiver + b":" + data
         else:
             return None
 

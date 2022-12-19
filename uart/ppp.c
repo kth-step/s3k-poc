@@ -4,8 +4,8 @@
 
 #include "uart.h"
 
-#define PPP_ESCAPE '|'
-#define PPP_SEQ '}'
+#define PPP_ESCAPE '\\'
+#define PPP_SEQ '\n'
 #define PPP_COMP ' '
 
 /**
@@ -38,6 +38,7 @@ int ppp_send(const char* restrict buf, int length)
 int ppp_recv(char* restrict buf, int length)
 {
         static int i = 0;
+        static bool in_frame = false;
         bool escape = false;
         while (1) {
                 char c = uart_getchar();
@@ -45,18 +46,21 @@ int ppp_recv(char* restrict buf, int length)
                 case PPP_ESCAPE: /* Escape character */
                         escape = true;
                         break;
-                case PPP_SEQ: /* Restart */
-                        if (i > 0) {
+                case PPP_SEQ:
+                        if (in_frame && i > 0) { /* Done */
                                 int tmp = i;
                                 i = 0;
                                 return tmp;
                         }
+                        in_frame = true;
                         break;
                 default:
-                        if (i < length) { /* Save a byte */
+                        if (in_frame && i < length) { /* Save a byte */
                                 buf[i++] = escape ? (PPP_COMP ^ c) : c;
                                 escape = false;
-                        } else { /* Message too long */
+                        } else if (i >= length) { /* Message too long */
+                                i = 0;
+                                in_frame = false;
                                 return -1;
                         }
                 }

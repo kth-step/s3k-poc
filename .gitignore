@@ -1,7 +1,9 @@
 *.o
 *.da
+*.d
 *.elf
 *.bin
+build
 compile_commands.json
 
 .cache
