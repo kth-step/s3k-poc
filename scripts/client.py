@@ -5,7 +5,7 @@ S3K Proof-of-Concept client application
 
 from argparse import ArgumentParser
 from queue import Queue
-import threading
+from threading import Thread
 import socket
 import time
 import sys
@@ -13,13 +13,27 @@ import shlex
 import string
 import shutil
 
+
+class BadCommand(Exception):
+    """
+    Thrown when bad command was inputted
+    """
+
+
 def ppp_encode(data):
+    """
+    Encode data as a PPP frame.
+    """
     data = bytearray(data)
     data = data.replace(b"\\", b"\\|")
     data = data.replace(b"\n", b"\\*")
     return data
 
+
 def ppp_decode(data):
+    """
+    Decode a PPP frame.
+    """
     data = bytearray(data)
     res = []
     escape = False
@@ -32,83 +46,107 @@ def ppp_decode(data):
             escape = False
     return res
 
-def make_ppp_frames(receiver, data):
-    n = FRAME_SIZE - len(receiver) - 14
-    n -= n % 8
-    data = bytearray(data)
-    frames = [ppp_encode(receiver + b":" + bytes(format(i, "04x"), 'ascii') + b":" + data[i:i+n])
-              for i in range(0, len(data), n)]
+
+def make_ppp_frames(tag, data):
+    """
+    Divide data into multiple PPP frames that includes a header.
+    Each frame becomes,
+    <tag>:<offset>:<payload>
+    where <tag> identifies type of package,
+          <offset> is offset info _data_,
+          <payload> is part of _data_.
+    """
+    # Calculate the payload size
+    header_len = len(tag + b":0000:")
+    payload_len = FRAME_LEN - header_len
+    payload_len -= payload_len % 8
+
+    # Create frames with our header.
+    # Header is '<receiver>:<offset>:'
+    frames = []
+    for i in range(0, len(data), payload_len):
+        offset = bytes(format(i, '04x'), 'ASCII')
+        header = tag + b":" + offset + b":"
+        payload = data[i:i+payload_len]
+        frame = ppp_encode(header + payload)
+        frames.append(frame)
+
+    # Add frame markers (b'\n') between each frame
     return b"\n" + b"\n".join(frames) + b"\n"
 
-class Receiver(threading.Thread):
-    def __init__(self, sock):
-        threading.Thread.__init__(self)
-        self.sock = sock
-        self.daemon = True
-        self.name = "receiver"
 
-    def run(self):
-        line = b""
-        while True:
-            data = self.sock.recv(256)
-            data = data.split(b"\n")
-            if len(data) == 1:
-                line += data[0]
-            else:
-                data[0] = line + data[0]
-                line = data[-1]
-            for frame in data[0:-1]:
-                if not frame:
-                    continue
-                # Replace non-printable bytes with period
-                frame = ppp_decode(frame)
-                text = [i if i in bytes(string.printable[:-5], 'ascii')
-                        else ord('.') for i in frame]
-                term_size = shutil.get_terminal_size((80, 20))
-                text = ">" + bytes(text).decode('ascii')
-                print(text[:term_size.columns])
+def parse_command(cmd):
+    """
+    Parse command from input and get receiver + data to send.
+    """
+    try:
+        cmd_args = shlex.split(cmd)
+    except ValueError as excpt:
+        raise BadCommand(f"Command Error: {excpt}.") from excpt
 
-class Sender(threading.Thread):
-    def __init__(self, sock, cmd_queue):
-        threading.Thread.__init__(self)
-        self.sock = sock
-        self.daemon = True
-        self.name = "sender"
-        self.cmd_queue = cmd_queue
+    if len(cmd_args) != 3:
+        raise BadCommand("Command Error: Expected <cmd> <tag> <argument>.")
 
-    def parse_command(self, cmd):
-        args = shlex.split(cmd)
-        if args[0] == 'send' and len(args) == 3 and len(args[1]) <= 8:
-            receiver = args[1].encode('ascii')
-            data = args[2].encode('ascii')
-            return (receiver, data)
-        elif args[0] == 'send-file' and len(args) == 3 and len(args[1]) <= 8:
-            receiver = args[1].encode('ascii')
-            filename = args[2]
+    cmd = cmd_args[0]
+    tag = cmd_args[1].encode('ASCII')
+
+    if len(tag) > 8:
+        # Tag is at most 8 characters
+        raise BadCommand(f"Command Error: Tag '{tag}' > 8.")
+
+    if cmd == 'send':
+        data = cmd_args[2].encode('ASCII')
+        return (tag, data)
+
+    if cmd == 'send-file':
+        filename = cmd_args[2]
+        try:
             with open(filename, 'rb') as file:
                 data = file.read()
-            return (receiver, data)
-        else:
-            return None
+                return (tag, data)
+        except OSError as excpt:
+            raise BadCommand(f"Command Error: {excpt.strerror}.") from excpt
 
-    def run(self):
-        while True:
-            try:
-                cmd = self.cmd_queue.get(block=True)
-                res = self.parse_command(cmd)
-                if not res:
-                    continue
-                receiver, data = res
-                if len(data) > 0x10000:
-                    print(f"Too much data, {len(data)} bytes.")
-                elif data:
-                    frames = make_ppp_frames(receiver, data)
-                    self.sock.sendall(frames)
-                    print(f"Sent {len(data)} bytes.")
-                else:
-                    print("Invalid command")
-            except Exception as e:
-                print(e)
+    raise BadCommand("Command Error: Unknown command.")
+
+
+def receiver_worker(sock):
+    """
+    Receive frames from the kernel apps and prints them.
+    """
+    line = b""
+    while True:
+        data = sock.recv(256)
+        data = data.split(b"\n")
+        if len(data) == 1:
+            line += data[0]
+        else:
+            data[0] = line + data[0]
+            line = data[-1]
+
+        for frame in data[0:-1]:
+            if not frame:
+                continue
+            # Decode the frame
+            payload = ppp_decode(frame)
+            # Replace non-printable bytes with period
+            text = [i if i in bytes(string.printable[:-5], 'ASCII')
+                    else ord('.') for i in payload]
+            term_size = shutil.get_terminal_size((80, 20))
+            text = ">" + bytes(text).decode('ASCII')
+            print(text[:term_size.columns])
+
+
+def sender_worker(sock, data_queue):
+    """
+    Makes frames from (receiver, data) and sends
+    to the kernel apps.
+    """
+    while True:
+        receiver, data = data_queue.get(block=True)
+        frames = make_ppp_frames(receiver, data)
+        sock.sendall(frames)
+        print(f"Sent {len(data)} bytes.")
 
 
 def main(ip_addr, port):
@@ -116,19 +154,33 @@ def main(ip_addr, port):
     Main function of this module
     """
 
-    cmd_queue = Queue()
+    data_queue = Queue()
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.connect((ip_addr, port))
-        receiver = Receiver(sock)
-        sender = Sender(sock, cmd_queue)
-        receiver.start()
-        sender.start()
-        while receiver.is_alive() and sender.is_alive():
-            line = sys.stdin.readline().strip()
-            if line:
-                cmd_queue.put(line) 
-            time.sleep(1/30)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ip_addr, port))
+
+    receiver = Thread(target=receiver_worker,
+                      args=(sock,),
+                      daemon=True)
+    sender = Thread(target=sender_worker,
+                    args=(sock, data_queue,),
+                    daemon=True)
+
+    receiver.start()
+    sender.start()
+
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            tag, data = parse_command(line)
+        except BadCommand as excpt:
+            print(excpt)
+            continue
+        data_queue.put((tag, data))
+
+    socket.close()
 
 
 if __name__ == "__main__":
@@ -137,8 +189,8 @@ if __name__ == "__main__":
             description="Client for communicating with PoC applications")
     parser.add_argument('ip_addr', type=str)
     parser.add_argument('port', type=int)
-    parser.add_argument('-f', '--frame-size', type=int, default=256)
+    parser.add_argument('-f', '--frame-len', type=int, default=256)
     args = parser.parse_args()
-    FRAME_SIZE = args.frame_size
+    FRAME_LEN = args.frame_len
 
     main(args.ip_addr, args.port)

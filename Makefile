@@ -29,8 +29,13 @@ APP1_SRCS=app1/main.c common/start.S
 APP1_OBJS=$(patsubst %, build/%.o, $(APP1_SRCS))
 APP1_DEPS=$(APP1_OBJS:.o=.d)
 
+PAYLOAD_APPS=uart app0 app1
+PAYLOAD_HEXS=$(patsubst %, build/%.hex, $(PAYLOAD_APPS))
+PAYLOAD_BINS=$(patsubst %, build/%.bin, $(PAYLOAD_APPS))
+PAYLOAD_DAS=$(patsubst %, build/%.da, $(PAYLOAD_APPS))
 
-all: build/s3k.elf build/monitor.elf build/s3k.da build/monitor.da 
+
+all: build/s3k.elf build/monitor.elf build/s3k.da build/monitor.da $(PAYLOAD_HEXS)
 clean:
 	rm -fr build
 
@@ -55,7 +60,10 @@ build/s3k.elf:
 %.da: %.elf
 	$(OBJDUMP) -d $< > $@
 
-build/monitor/payload.S.o: monitor/payload.S build/uart.bin build/app0.bin build/app1.bin
+%.hex: %.elf
+	$(OBJCOPY) -O ihex $< $@
+
+build/monitor/payload.S.o: monitor/payload.S $(PAYLOAD_BINS)
 
 build/%.S.o: %.S
 	@mkdir -p $(@D)
