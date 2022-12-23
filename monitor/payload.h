@@ -1,5 +1,7 @@
-#include <stddef.h>
-extern const char uart_bin_begin[], uart_bin_end[];
-extern const char app0_bin_begin[], app0_bin_end[];
-extern const char app1_bin_begin[], app1_bin_end[];
-
+#pragma once
+extern unsigned char uart_bin[];
+extern unsigned int uart_bin_len;
+extern unsigned char app0_bin[];
+extern unsigned int app0_bin_len;
+extern unsigned char app1_bin[];
+extern unsigned int app1_bin_len;

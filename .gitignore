@@ -3,7 +3,7 @@
 *.d
 *.elf
 *.bin
-build
+monitor/payloads/
+build/
 compile_commands.json
-
-.cache
+.cache/
