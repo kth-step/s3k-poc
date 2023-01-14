@@ -2,5 +2,5 @@
 
 void main(void)
 {
-        uart_puts("hello, app0");
+	uart_puts("hello, app0");
 }

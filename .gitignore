@@ -1,9 +1,6 @@
 *.o
 *.da
 *.d
+*.su
 *.elf
 *.bin
-monitor/payloads/
-build/
-compile_commands.json
-.cache/

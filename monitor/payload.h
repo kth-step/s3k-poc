@@ -1,7 +1,10 @@
 #pragma once
-extern unsigned char uart_bin[];
-extern unsigned int uart_bin_len;
-extern unsigned char app0_bin[];
-extern unsigned int app0_bin_len;
-extern unsigned char app1_bin[];
-extern unsigned int app1_bin_len;
+#include <stdint.h>
+extern uint8_t uart_bin[];
+extern size_t uart_bin_len;
+
+extern uint8_t app0_bin[];
+extern size_t app0_bin_len;
+
+extern uint8_t app1_bin[];
+extern size_t app1_bin_len;

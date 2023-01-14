@@ -7,12 +7,6 @@ _start:
         lla     gp,__global_pointer$
 .option pop
         lla     sp,_sp
-        call    _reloc
-        call    _zero_bss
-        
-        call    main
-1:      j       1b
-
 _zero_bss:
         lla     t0,_bss
         lla     t1,_ebss
@@ -20,7 +14,6 @@ _zero_bss:
 1:      sd      x0,(t0)
         addi    t0,t0,8
 2:      bne     t0,t1,1b
-        ret
 
 _reloc:
         lla     t0,_got
@@ -32,4 +25,7 @@ _reloc:
         sd      t3,(t0)
         addi    t0,t0,8
 2:      bne     t0,t1,1b
-        ret
+_main:
+        call    main
+1:      j       1b
+
