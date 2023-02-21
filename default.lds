@@ -20,11 +20,11 @@ SECTIONS {
                 _edata = .;
         }
 
-        .bss : {
+        .bss : ALIGN(8) {
                 _bss = .;
                 *(.sbss .sbss.*)
                 *(.bss .bss.*)
-                _ebss = .;
+                _ebss = ALIGN(8);
         }
 
 	.stack : ALIGN(8) {

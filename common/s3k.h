@@ -232,12 +232,9 @@ void s3k_yield(void);
  * @brief Reads a capability description.
  *
  * @param i Index of capability table.
- * @param cap Destination for a serialized capability description.
- * @return `S3K_EXCPT_INDEX` if index i or j is out-of-range.
- * @return `S3K_EXCPT_NONE` if capability was read.
- * @note The read capability may have type `S3K_CAPTY_NONE`.
+ * @return The read capability.
  */
-enum s3k_excpt s3k_getcap(uint64_t i, union s3k_cap *cap);
+union s3k_cap s3k_getcap(uint64_t i);
 
 /**
  * @brief Moves a capability.

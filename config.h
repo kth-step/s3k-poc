@@ -1,24 +1,27 @@
 // See LICENSE file for copyright and license details.
 #pragma once
 
+#define PAYLOAD 0x80010000
+#define NHART	4
+
 /* Number of processes. */
-#define N_PROC 6
+#define NPROC 6
 
 /* Number of capabilities per process */
-#define N_CAPS 64
+#define NCAP 64
 
 /* Number of time slices in a major frame. */
-#define N_QUANTUM 4
+#define NSLICE 4
 
 /* Number of communications channels */
-#define N_PORTS 8
+#define NPORT 8
 
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
-#define TICKS (TICKS_PER_SECOND / N_QUANTUM / 1)
+#define NTICK 1000
 
 /* Number of scheduler ticks. */
-#define SCHEDULER_TICKS 2000
+#define NSLACK 100
 
 /* Uncomment to enable memory protection */
 // #define MEMORY_PROTECTION

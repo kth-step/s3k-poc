@@ -10,11 +10,11 @@ _start:
 .option pop
 	lla	sp,_stack_top
 
-	lla	t0,_edata
-	lla	t1,_end
+	lla	t0,_bss
+	lla	t1,_ebss
 	j	2f
-1:	sb	zero,(t0)
-	addi	t0,t0,1
+1:	sd	zero,(t0)
+	addi	t0,t0,8
 2:	bne	t0,t1,1b
 
 

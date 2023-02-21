@@ -25,7 +25,7 @@ char app0_mem[2][MEMSIZE] NOINIT ALIGNED(MEMSIZE);
 char app1_mem[2][MEMSIZE] NOINIT ALIGNED(MEMSIZE);
 
 /* Shared memory */
-char uart_buf[64] NOINIT ALIGNED(64);
+volatile char uart_buf[64] NOINIT ALIGNED(64);
 
 void setup_process(int pid, char mem[MEMSIZE])
 {
