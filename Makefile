@@ -7,6 +7,7 @@ export OBJDUMP=${RISCV_PREFIX}objdump
 
 MONITOR=monitor/monitor.elf
 KERNEL=../s3k/s3k.elf
+CONFIG_H=${abspath config.h}
 
 all: ${MONITOR} ${KERNEL}
 
@@ -14,11 +15,16 @@ clean:
 	git clean -fdX
 	${MAKE} -C ${dir ${KERNEL}} clean
 
-${MONITOR}:
+api:
+	mkdir -p common/s3k
+	cp ../s3k/api/s3k.h common/s3k.h
+	cp ../s3k/api/s3k.c common/s3k.c
+
+${MONITOR}: api
 	${MAKE} -C ${@D} ${@F}
 
 ${KERNEL}:
-	${MAKE} -C ${@D} ${@F}
+	${MAKE} -C ${@D} ${@F} CONFIG_H=${CONFIG_H}
 
 %.bin: %.elf
 	${OBJCOPY} -O binary $< $@
@@ -26,4 +32,7 @@ ${KERNEL}:
 %.da: %.elf
 	${OBJDUMP} -d $< > $@
 
-.PHONY: all clean qemu ${MONITOR} ${KERNEL}
+qemu: $(KERNEL) $(MONITOR)
+	./scripts/qemu.sh $(KERNEL) $(MONITOR)
+
+.PHONY: all api clean qemu ${MONITOR} ${KERNEL}

@@ -1,6 +1,9 @@
 #include "uart.h"
 
-void main(void)
+void setup(void)
 {
-	uart_puts("hello, app1");
+}
+
+void loop(void)
+{
 }

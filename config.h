@@ -2,7 +2,7 @@
 #pragma once
 
 /* Number of processes. */
-#define N_PROC 8
+#define N_PROC 6
 
 /* Number of capabilities per process */
 #define N_CAPS 64
@@ -15,10 +15,10 @@
 
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
-#define TICKS (TICKS_PER_SECOND / N_QUANTUM/ 1)
+#define TICKS (TICKS_PER_SECOND / N_QUANTUM / 1)
 
 /* Number of scheduler ticks. */
 #define SCHEDULER_TICKS 2000
 
 /* Uncomment to enable memory protection */
-//#define MEMORY_PROTECTION
+// #define MEMORY_PROTECTION

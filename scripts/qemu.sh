@@ -28,7 +28,7 @@ qemu-system-riscv64 -M virt -smp 5 -m 8G -nographic -bios none -kernel $KERNEL \
         -device loader,file=$TMPBIN,addr=0x80010000 -s -S                      \
         -serial tcp:localhost:4321,server,nowait &
 
-x-terminal-emulator -e                                  \
+st -e                                  \
 riscv64-unknown-elf-gdb                                 \
         -ex "set confirm off"                           \
         -ex "set pagination off"                        \

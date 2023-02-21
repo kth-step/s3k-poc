@@ -1,17 +1,35 @@
+#include <stddef.h>
+
 #include "ppp.h"
 
-#define BUF_SIZE 256
+char *buf;
+size_t size;
 
-void main(void)
+const char *msg_ready = "uart_ready";
+const char *msg_long = "frame too long";
+
+size_t strlen(const char *s)
 {
-	char buf[BUF_SIZE];
-	const char *msg = "frame too long";
-	ppp_send("uart_ready", 10);
+	size_t len = 0;
+	while (s[len] != '\0')
+		len++;
+	return len;
+}
+
+void setup(char *_buf, size_t _size)
+{
+	buf = _buf;
+	size = _size;
+	ppp_send(msg_ready, strlen(msg_long));
+}
+
+void loop(void)
+{
 	while (1) {
-		int len = ppp_recv(buf, BUF_SIZE);
+		int len = ppp_recv(buf, size);
 		if (len > 0)
 			ppp_send(buf, len);
 		else
-			ppp_send(msg, 14);
+			ppp_send(msg_long, strlen(msg_long));
 	}
 }

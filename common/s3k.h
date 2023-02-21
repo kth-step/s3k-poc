@@ -1,752 +1,387 @@
-# 0 "api/s3k_call.h"
-# 0 "<built-in>"
-# 0 "<command-line>"
-# 1 "api/s3k_call.h"
-# 1 "api/../inc/cap.h" 1
-
-typedef enum cap_type {
-	CAP_TYPE_EMPTY,
-	CAP_TYPE_MEMORY,
-	CAP_TYPE_PMP,
-	CAP_TYPE_TIME,
-	CAP_TYPE_CHANNELS,
-	CAP_TYPE_RECEIVER,
-	CAP_TYPE_SENDER,
-	CAP_TYPE_SERVER,
-	CAP_TYPE_CLIENT,
-	CAP_TYPE_SUPERVISOR,
-	NUM_OF_CAP_TYPES
-} cap_type_t;
-
-typedef struct cap {
-	unsigned long word0, word1;
-} cap_t;
-
-static inline unsigned long pmp_napot_begin(unsigned long addr)
-{
-	return addr & (addr + 1);
-}
-
-static inline unsigned long pmp_napot_end(unsigned long addr)
-{
-	return addr | (addr + 1);
-}
-
-static inline cap_type_t cap_get_type(cap_t cap)
-{
-	return (cap_type_t)(0xfful & cap.word0);
-}
-
-static inline int cap_is_type(cap_t cap, cap_type_t t)
-{
-	return cap_get_type(cap) == t;
-}
-
-static inline cap_t cap_mk_memory(unsigned long begin, unsigned long end, unsigned long rwx,
-				  unsigned long free, unsigned long pmp)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_MEMORY;
-	cap.word1 = 0;
-	cap.word0 |= pmp << 8;
-	cap.word0 |= rwx << 16;
-	cap.word0 |= begin << 24;
-	cap.word1 |= free;
-	cap.word1 |= end << 32;
-	return cap;
-}
-
-static inline unsigned long cap_memory_get_begin(cap_t cap)
-{
-	return (cap.word0 >> 24) & 0xfffffffful;
-}
-
-static inline cap_t cap_memory_set_begin(cap_t cap, unsigned long begin)
-{
-	cap.word0 = (cap.word0 & ~0xffffffff000000ul) | begin << 24;
-	return cap;
-}
-
-static inline unsigned long cap_memory_get_end(cap_t cap)
-{
-	return (cap.word1 >> 32) & 0xfffffffful;
-}
-
-static inline cap_t cap_memory_set_end(cap_t cap, unsigned long end)
-{
-	cap.word1 = (cap.word1 & ~0xffffffff00000000ul) | end << 32;
-	return cap;
-}
-
-static inline unsigned long cap_memory_get_rwx(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfful;
-}
-
-static inline cap_t cap_memory_set_rwx(cap_t cap, unsigned long rwx)
-{
-	cap.word0 = (cap.word0 & ~0xff0000ul) | rwx << 16;
-	return cap;
-}
-
-static inline unsigned long cap_memory_get_free(cap_t cap)
-{
-	return cap.word1 & 0xfffffffful;
-}
-
-static inline cap_t cap_memory_set_free(cap_t cap, unsigned long free)
-{
-	cap.word1 = (cap.word1 & ~0xfffffffful) | free << 0;
-	return cap;
-}
-
-static inline unsigned long cap_memory_get_pmp(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_memory_set_pmp(cap_t cap, unsigned long pmp)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | pmp << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_pmp(unsigned long addr, unsigned long rwx)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_PMP;
-	cap.word1 = 0;
-	cap.word0 |= rwx << 8;
-	cap.word0 |= addr << 16;
-	return cap;
-}
-
-static inline unsigned long cap_pmp_get_addr(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfffffffful;
-}
-
-static inline cap_t cap_pmp_set_addr(cap_t cap, unsigned long addr)
-{
-	cap.word0 = (cap.word0 & ~0xffffffff0000ul) | addr << 16;
-	return cap;
-}
-
-static inline unsigned long cap_pmp_get_rwx(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_pmp_set_rwx(cap_t cap, unsigned long rwx)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | rwx << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_time(unsigned long hartid, unsigned long begin, unsigned long end,
-				unsigned long free)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_TIME;
-	cap.word1 = 0;
-	cap.word0 |= free << 8;
-	cap.word0 |= end << 24;
-	cap.word0 |= begin << 40;
-	cap.word0 |= hartid << 56;
-	return cap;
-}
-
-static inline unsigned long cap_time_get_hartid(cap_t cap)
-{
-	return (cap.word0 >> 56) & 0xfful;
-}
-
-static inline cap_t cap_time_set_hartid(cap_t cap, unsigned long hartid)
-{
-	cap.word0 = (cap.word0 & ~0xff00000000000000ul) | hartid << 56;
-	return cap;
-}
-
-static inline unsigned long cap_time_get_begin(cap_t cap)
-{
-	return (cap.word0 >> 40) & 0xfffful;
-}
-
-static inline cap_t cap_time_set_begin(cap_t cap, unsigned long begin)
-{
-	cap.word0 = (cap.word0 & ~0xffff0000000000ul) | begin << 40;
-	return cap;
-}
-
-static inline unsigned long cap_time_get_end(cap_t cap)
-{
-	return (cap.word0 >> 24) & 0xfffful;
-}
-
-static inline cap_t cap_time_set_end(cap_t cap, unsigned long end)
-{
-	cap.word0 = (cap.word0 & ~0xffff000000ul) | end << 24;
-	return cap;
-}
-
-static inline unsigned long cap_time_get_free(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfffful;
-}
-
-static inline cap_t cap_time_set_free(cap_t cap, unsigned long free)
-{
-	cap.word0 = (cap.word0 & ~0xffff00ul) | free << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_channels(unsigned long begin, unsigned long end, unsigned long free)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_CHANNELS;
-	cap.word1 = 0;
-	cap.word0 |= free << 8;
-	cap.word0 |= end << 24;
-	cap.word0 |= begin << 40;
-	return cap;
-}
-
-static inline unsigned long cap_channels_get_begin(cap_t cap)
-{
-	return (cap.word0 >> 40) & 0xfffful;
-}
-
-static inline cap_t cap_channels_set_begin(cap_t cap, unsigned long begin)
-{
-	cap.word0 = (cap.word0 & ~0xffff0000000000ul) | begin << 40;
-	return cap;
-}
-
-static inline unsigned long cap_channels_get_end(cap_t cap)
-{
-	return (cap.word0 >> 24) & 0xfffful;
-}
-
-static inline cap_t cap_channels_set_end(cap_t cap, unsigned long end)
-{
-	cap.word0 = (cap.word0 & ~0xffff000000ul) | end << 24;
-	return cap;
-}
-
-static inline unsigned long cap_channels_get_free(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfffful;
-}
-
-static inline cap_t cap_channels_set_free(cap_t cap, unsigned long free)
-{
-	cap.word0 = (cap.word0 & ~0xffff00ul) | free << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_receiver(unsigned long channel, unsigned long grant)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_RECEIVER;
-	cap.word1 = 0;
-	cap.word0 |= grant << 8;
-	cap.word0 |= channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_receiver_get_channel(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfffful;
-}
-
-static inline cap_t cap_receiver_set_channel(cap_t cap, unsigned long channel)
-{
-	cap.word0 = (cap.word0 & ~0xffff0000ul) | channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_receiver_get_grant(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_receiver_set_grant(cap_t cap, unsigned long grant)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | grant << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_sender(unsigned long channel, unsigned long grant)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_SENDER;
-	cap.word1 = 0;
-	cap.word0 |= grant << 8;
-	cap.word0 |= channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_sender_get_channel(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfffful;
-}
-
-static inline cap_t cap_sender_set_channel(cap_t cap, unsigned long channel)
-{
-	cap.word0 = (cap.word0 & ~0xffff0000ul) | channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_sender_get_grant(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_sender_set_grant(cap_t cap, unsigned long grant)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | grant << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_server(unsigned long channel, unsigned long grant)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_SERVER;
-	cap.word1 = 0;
-	cap.word0 |= grant << 8;
-	cap.word0 |= channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_server_get_channel(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfffful;
-}
-
-static inline cap_t cap_server_set_channel(cap_t cap, unsigned long channel)
-{
-	cap.word0 = (cap.word0 & ~0xffff0000ul) | channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_server_get_grant(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_server_set_grant(cap_t cap, unsigned long grant)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | grant << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_client(unsigned long channel, unsigned long grant)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_CLIENT;
-	cap.word1 = 0;
-	cap.word0 |= grant << 8;
-	cap.word0 |= channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_client_get_channel(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfffful;
-}
-
-static inline cap_t cap_client_set_channel(cap_t cap, unsigned long channel)
-{
-	cap.word0 = (cap.word0 & ~0xffff0000ul) | channel << 16;
-	return cap;
-}
-
-static inline unsigned long cap_client_get_grant(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_client_set_grant(cap_t cap, unsigned long grant)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | grant << 8;
-	return cap;
-}
-
-static inline cap_t cap_mk_supervisor(unsigned long begin, unsigned long end, unsigned long free)
-{
-	cap_t cap;
-	cap.word0 = (unsigned long)CAP_TYPE_SUPERVISOR;
-	cap.word1 = 0;
-	cap.word0 |= free << 8;
-	cap.word0 |= end << 16;
-	cap.word0 |= begin << 24;
-	return cap;
-}
-
-static inline unsigned long cap_supervisor_get_begin(cap_t cap)
-{
-	return (cap.word0 >> 24) & 0xfful;
-}
-
-static inline cap_t cap_supervisor_set_begin(cap_t cap, unsigned long begin)
-{
-	cap.word0 = (cap.word0 & ~0xff000000ul) | begin << 24;
-	return cap;
-}
-
-static inline unsigned long cap_supervisor_get_end(cap_t cap)
-{
-	return (cap.word0 >> 16) & 0xfful;
-}
-
-static inline cap_t cap_supervisor_set_end(cap_t cap, unsigned long end)
-{
-	cap.word0 = (cap.word0 & ~0xff0000ul) | end << 16;
-	return cap;
-}
-
-static inline unsigned long cap_supervisor_get_free(cap_t cap)
-{
-	return (cap.word0 >> 8) & 0xfful;
-}
-
-static inline cap_t cap_supervisor_set_free(cap_t cap, unsigned long free)
-{
-	cap.word0 = (cap.word0 & ~0xff00ul) | free << 8;
-	return cap;
-}
-
-static inline int cap_is_revokable(cap_t cap)
-{
-	return cap_is_type(cap, CAP_TYPE_MEMORY) && cap_is_type(cap, CAP_TYPE_TIME) &&
-	       cap_is_type(cap, CAP_TYPE_CHANNELS) && cap_is_type(cap, CAP_TYPE_RECEIVER) &&
-	       cap_is_type(cap, CAP_TYPE_SENDER) && cap_is_type(cap, CAP_TYPE_SERVER) &&
-	       cap_is_type(cap, CAP_TYPE_CLIENT) && cap_is_type(cap, CAP_TYPE_SUPERVISOR);
-}
-
-static inline int cap_is_child(cap_t p, cap_t c)
-{
-	if (cap_is_type(p, CAP_TYPE_MEMORY) && cap_is_type(c, CAP_TYPE_MEMORY))
-		return (cap_memory_get_begin(p) <= cap_memory_get_begin(c)) &&
-		       (cap_memory_get_end(c) <= cap_memory_get_free(p)) &&
-		       ((cap_memory_get_rwx(c) & cap_memory_get_rwx(p)) == cap_memory_get_rwx(c));
-	if (cap_is_type(p, CAP_TYPE_MEMORY) && cap_is_type(c, CAP_TYPE_PMP))
-		return (cap_memory_get_free(p) <= pmp_napot_begin(cap_pmp_get_addr(c))) &&
-		       (pmp_napot_end(cap_pmp_get_addr(c)) <= cap_memory_get_end(p)) &&
-		       (cap_memory_get_pmp(p) == 1) &&
-		       ((cap_pmp_get_rwx(c) & cap_memory_get_rwx(p)) == cap_pmp_get_rwx(c));
-	if (cap_is_type(p, CAP_TYPE_TIME) && cap_is_type(c, CAP_TYPE_TIME))
-		return (cap_time_get_begin(p) <= cap_time_get_begin(c)) &&
-		       (cap_time_get_end(c) <= cap_time_get_free(p)) &&
-		       (cap_time_get_hartid(p) == cap_time_get_hartid(c));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_CHANNELS))
-		return (cap_channels_get_begin(p) <= cap_channels_get_begin(c)) &&
-		       (cap_channels_get_end(c) <= cap_channels_get_free(p));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_RECEIVER))
-		return (cap_channels_get_begin(p) <= cap_receiver_get_channel(c)) &&
-		       (cap_receiver_get_channel(c) < cap_channels_get_free(p));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_SENDER))
-		return (cap_channels_get_begin(p) <= cap_sender_get_channel(c)) &&
-		       (cap_sender_get_channel(c) < cap_channels_get_free(p));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_SERVER))
-		return (cap_channels_get_begin(p) <= cap_server_get_channel(c)) &&
-		       (cap_server_get_channel(c) < cap_channels_get_free(p));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_CLIENT))
-		return (cap_channels_get_begin(p) <= cap_client_get_channel(c)) &&
-		       (cap_client_get_channel(c) < cap_channels_get_free(p));
-	if (cap_is_type(p, CAP_TYPE_RECEIVER) && cap_is_type(c, CAP_TYPE_SENDER))
-		return (cap_receiver_get_channel(p) == cap_sender_get_channel(c));
-	if (cap_is_type(p, CAP_TYPE_SERVER) && cap_is_type(c, CAP_TYPE_CLIENT))
-		return (cap_server_get_channel(p) == cap_client_get_channel(c));
-	if (cap_is_type(p, CAP_TYPE_SUPERVISOR) && cap_is_type(c, CAP_TYPE_SUPERVISOR))
-		return (cap_supervisor_get_begin(p) <= cap_supervisor_get_begin(c)) &&
-		       (cap_supervisor_get_end(c) <= cap_supervisor_get_free(p));
-	return 0;
-}
-
-static inline int cap_can_derive(cap_t p, cap_t c)
-{
-	if (cap_is_type(p, CAP_TYPE_MEMORY) && cap_is_type(c, CAP_TYPE_MEMORY))
-		return (cap_memory_get_pmp(p) == 0) && (cap_memory_get_pmp(c) == 0) &&
-		       (cap_memory_get_free(p) == cap_memory_get_begin(c)) &&
-		       (cap_memory_get_end(c) <= cap_memory_get_end(p)) &&
-		       ((cap_memory_get_rwx(c) & cap_memory_get_rwx(p)) == cap_memory_get_rwx(c)) &&
-		       (cap_memory_get_free(c) == cap_memory_get_begin(c)) &&
-		       (cap_memory_get_begin(c) < cap_memory_get_end(c));
-	if (cap_is_type(p, CAP_TYPE_MEMORY) && cap_is_type(c, CAP_TYPE_PMP))
-		return (cap_memory_get_free(p) <= pmp_napot_begin(cap_pmp_get_addr(c))) &&
-		       (pmp_napot_end(cap_pmp_get_addr(c)) <= cap_memory_get_end(p)) &&
-		       ((cap_pmp_get_rwx(c) & cap_memory_get_rwx(p)) == cap_pmp_get_rwx(c));
-	if (cap_is_type(p, CAP_TYPE_TIME) && cap_is_type(c, CAP_TYPE_TIME))
-		return (cap_time_get_hartid(p) == cap_time_get_hartid(c)) &&
-		       (cap_time_get_free(p) == cap_time_get_begin(c)) &&
-		       (cap_time_get_end(c) <= cap_time_get_end(p)) &&
-		       (cap_time_get_free(c) == cap_time_get_begin(c)) &&
-		       (cap_time_get_begin(c) < cap_time_get_end(c));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_CHANNELS))
-		return (cap_channels_get_free(p) == cap_channels_get_begin(c)) &&
-		       (cap_channels_get_end(c) <= cap_channels_get_end(p)) &&
-		       (cap_channels_get_free(c) == cap_channels_get_begin(c)) &&
-		       (cap_channels_get_begin(c) < cap_channels_get_end(c));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_RECEIVER))
-		return (cap_channels_get_free(p) == cap_receiver_get_channel(c)) &&
-		       (cap_receiver_get_channel(c) < cap_channels_get_end(p)) &&
-		       (cap_receiver_get_grant(c) == 0 || cap_receiver_get_grant(c) == 1);
-	if (cap_is_type(p, CAP_TYPE_RECEIVER) && cap_is_type(c, CAP_TYPE_SENDER))
-		return (cap_receiver_get_channel(p) == cap_sender_get_channel(c)) &&
-		       (cap_receiver_get_grant(p) == cap_sender_get_grant(c));
-	if (cap_is_type(p, CAP_TYPE_CHANNELS) && cap_is_type(c, CAP_TYPE_SERVER))
-		return (cap_channels_get_free(p) == cap_server_get_channel(c)) &&
-		       (cap_server_get_channel(c) < cap_channels_get_end(p)) &&
-		       (cap_server_get_grant(c) == 0 || cap_server_get_grant(c) == 1);
-	if (cap_is_type(p, CAP_TYPE_SERVER) && cap_is_type(c, CAP_TYPE_CLIENT))
-		return (cap_server_get_channel(p) == cap_client_get_channel(c)) &&
-		       (cap_server_get_grant(p) == cap_client_get_grant(c));
-	if (cap_is_type(p, CAP_TYPE_SUPERVISOR) && cap_is_type(c, CAP_TYPE_SUPERVISOR))
-		return (cap_supervisor_get_free(p) <= cap_supervisor_get_begin(c)) &&
-		       (cap_supervisor_get_end(c) <= cap_supervisor_get_end(p)) &&
-		       (cap_supervisor_get_free(c) == cap_supervisor_get_begin(c)) &&
-		       (cap_supervisor_get_begin(c) < cap_supervisor_get_end(c));
-	return 0;
-}
-
-# 2 "api/s3k_call.h" 2
-# 1 "api/../inc/consts.h" 1
-
-enum s3k_state {
-	S3K_STATE_READY,
-	S3K_STATE_RUNNING,
-	S3K_STATE_WAITING,
-	S3K_STATE_RECEIVING,
-	S3K_STATE_SUSPENDED,
-	S3K_STATE_RUNNING_THEN_SUSPEND,
-	S3K_STATE_SUSPENDED_BUSY,
-	S3K_STATE_RECEIVING_THEN_SUSPEND
+/* See LICENSE file for copyright and license details. */
+/**
+ * @file s3k.h
+ * @brief Kernel API for user applications.
+ *
+ * This file contains all necessary enums, structs, and functions used for interacting with the S3K
+ * Kernel.
+ *
+ * @author Henrik Karlsson (henrik10@kth.se)
+ */
+#ifndef __S3K_H__
+#define __S3K_H__
+#include <stdbool.h>
+#include <stdint.h>
+
+/// @defgroup api S3K Kernel API
+///
+/// S3K Kernel User-level API
+///
+/// @{
+
+/**
+ * @brief Enumeration S3K system call exception codes.
+ *
+ * These exeception codes are returned by most of S3K's system calls. When no exception occured
+ * while executing a system call, `S3K_EXCPT_NONE` (=0) is returned.
+ */
+enum s3k_excpt {
+	S3K_EXCPT_NONE,		 ///< No exception.
+	S3K_EXCPT_EMPTY,	 ///< Capability slot is empty.
+	S3K_EXCPT_COLLISION,	 ///< Capability slot is occupied.
+	S3K_EXCPT_DERIVATION,	 ///< Capability can not be derived.
+	S3K_EXCPT_PREEMPTED,	 ///< System call was preempted.
+	S3K_EXCPT_BUSY,		 ///< Process busy.
+	S3K_EXCPT_UNIMPLEMENTED	 ///< System call not implemented for specified capability.
 };
 
-enum s3k_code {
-	S3K_OK,
-	S3K_ERROR,
-	S3K_EMPTY,
-	S3K_PREEMPTED,
-	S3K_INTERRUPTED,
-	S3K_OCCUPIED,
-	S3K_NO_RECEIVER,
-	S3K_ILLEGAL_DERIVATION,
-	S3K_SUPERVISEE_BUSY,
-	S3K_INVALID_SUPERVISEE,
-	S3K_INVALID_CAPABILITY,
-	S3K_UNIMPLEMENTED,
+/// @brief Enumeration of capability types.
+enum s3k_capty {
+	/// **No capability**
+	S3K_CAPTY_NONE,
+	/// **Time slice capability**, letting the process modify and manage the minor frames of the
+	/// round-robin scheduler.
+	S3K_CAPTY_TIME,
+	/// **Memory slice capability** for manage slices of memory. Can be used to derive memory
+	/// slice capabilities and PMP capabilities.
+	S3K_CAPTY_MEMORY,
+	/// **PMP capability**, letting the process modify RISC-V's Physical Memory Protection (PMP)
+	/// unit.
+	S3K_CAPTY_PMP,
+	/// **Process monitor capability**, letting the process suspend, resume and modify suspended
+	/// processes.
+	S3K_CAPTY_MONITOR,
+	/// **IPC channel capability**, for creating and managing IPC channel receive endpoints.
+	S3K_CAPTY_CHANNEL,
+	/// **IPC receive capability**, IPC endpoint for receiving messages and capabilities. Can be
+	/// used to derive IPC send capabilities.
+	S3K_CAPTY_SOCKET,
 };
 
-enum s3k_call {
-	S3K_SYSCALL_GET_PID,
-	S3K_SYSCALL_GET_REG,
-	S3K_SYSCALL_SET_REG,
-	S3K_SYSCALL_YIELD,
-
-	S3K_SYSCALL_READ_CAP,
-	S3K_SYSCALL_MOVE_CAP,
-	S3K_SYSCALL_DELETE_CAP,
-	S3K_SYSCALL_REVOKE_CAP,
-	S3K_SYSCALL_DERIVE_CAP,
-
-	S3K_SYSCALL_SUP_SUSPEND,
-	S3K_SYSCALL_SUP_RESUME,
-	S3K_SYSCALL_SUP_GET_STATE,
-	S3K_SYSCALL_SUP_GET_REG,
-	S3K_SYSCALL_SUP_SET_REG,
-	S3K_SYSCALL_SUP_READ_CAP,
-	S3K_SYSCALL_SUP_MOVE_CAP,
-
-	NUM_OF_SYSNR
+/**
+ * @brief Enumeration of S3K registers.
+ *
+ * Includes RISC-V's general purpose registers (GPR), program counter, and S3K specific
+ * virtual registers (VR).
+ */
+enum s3k_reg {
+	/* General purpose registers */
+	S3K_REG_PC,   ///< Program counter
+	S3K_REG_RA,   ///< Return address (GPR)
+	S3K_REG_SP,   ///< Stack pointer (GPR)
+	S3K_REG_GP,   ///< Global pointer (GPR)
+	S3K_REG_TP,   ///< Thread pointer (GPR)
+	S3K_REG_T0,   ///< Temporary register (GPR)
+	S3K_REG_T1,   ///< Temporary register (GPR)
+	S3K_REG_T2,   ///< Temporary register (GPR)
+	S3K_REG_S0,   ///< Saved register/Stack frame pointer (GPR)
+	S3K_REG_S1,   ///< Saved register (GPR)
+	S3K_REG_A0,   ///< Argument/Return register (GPR)
+	S3K_REG_A1,   ///< Argument/Return register (GPR)
+	S3K_REG_A2,   ///< Argument register (GPR)
+	S3K_REG_A3,   ///< Argument register (GPR)
+	S3K_REG_A4,   ///< Argument register (GPR)
+	S3K_REG_A5,   ///< Argument register (GPR)
+	S3K_REG_A6,   ///< Argument register (GPR)
+	S3K_REG_A7,   ///< Argument register (GPR)
+	S3K_REG_S2,   ///< Saved register (GPR)
+	S3K_REG_S3,   ///< Saved register (GPR)
+	S3K_REG_S4,   ///< Saved register (GPR)
+	S3K_REG_S5,   ///< Saved register (GPR)
+	S3K_REG_S6,   ///< Saved register (GPR)
+	S3K_REG_S7,   ///< Saved register (GPR)
+	S3K_REG_S8,   ///< Saved register (GPR)
+	S3K_REG_S9,   ///< Saved register (GPR)
+	S3K_REG_S10,  ///< Saved register (GPR)
+	S3K_REG_S11,  ///< Saved register (GPR)
+	S3K_REG_T3,   ///< Temporary register (GPR)
+	S3K_REG_T4,   ///< Temporary register (GPR)
+	S3K_REG_T5,   ///< Temporary register (GPR)
+	S3K_REG_T6,   ///< Temporary register (GPR)
+	/* Virtual registers */
+	S3K_REG_CAUSE,	///< Exception cause code.
+	S3K_REG_TVAL,	///< Exception value.
+	S3K_REG_EPC,	///< Exception program counter.
+	S3K_REG_TVEC,	///< Exception handling vector.
+	S3K_REG_PMP,	///< PMP configuration.
+	S3K_REG_COUNT	///< *Number of S3K registers.*
 };
 
-typedef enum s3k_state s3k_state_t;
-typedef enum s3k_code s3k_code_t;
-typedef enum s3k_call s3k_call_t;
-# 3 "api/s3k_call.h" 2
+struct s3k_time {
+	uint64_t type : 4;
+	uint64_t hartid : 8;
+	uint64_t begin : 16;
+	uint64_t free : 16;
+	uint64_t end : 16;
+};
 
-static inline unsigned long _S3K_SYSCALL(unsigned long sysnr, unsigned long args[8],
-					 unsigned long cnt)
-{
-	register unsigned long t0 __asm__("t0") = sysnr;
-	register unsigned long a0 __asm__("a0") = args[0];
-	register unsigned long a1 __asm__("a1") = args[1];
-	register unsigned long a2 __asm__("a2") = args[2];
-	register unsigned long a3 __asm__("a3") = args[3];
-	register unsigned long a4 __asm__("a4") = args[4];
-	register unsigned long a5 __asm__("a5") = args[5];
-	register unsigned long a6 __asm__("a6") = args[6];
-	register unsigned long a7 __asm__("a7") = args[7];
-	switch (cnt) {
-	case 0:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "=r"(a0), "=r"(a1), "=r"(a2), "=r"(a3), "=r"(a4),
-				   "=r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 1:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "=r"(a1), "=r"(a2), "=r"(a3), "=r"(a4),
-				   "=r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 2:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "=r"(a2), "=r"(a3), "=r"(a4),
-				   "=r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 3:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "+r"(a2), "=r"(a3), "=r"(a4),
-				   "=r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 4:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "+r"(a2), "+r"(a3), "=r"(a4),
-				   "=r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 5:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "+r"(a2), "+r"(a3), "+r"(a4),
-				   "=r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 6:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "+r"(a2), "+r"(a3), "+r"(a4),
-				   "+r"(a5), "=r"(a6), "=r"(a7));
-		break;
-	case 7:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "+r"(a2), "+r"(a3), "+r"(a4),
-				   "+r"(a5), "+r"(a6), "=r"(a7));
-		break;
-	case 8:
-		__asm__ volatile("ecall"
-				 : "+r"(t0), "+r"(a0), "+r"(a1), "+r"(a2), "+r"(a3), "+r"(a4),
-				   "+r"(a5), "+r"(a6), "+r"(a7));
-		break;
-	}
-	args[0] = a0;
-	args[1] = a1;
-	args[2] = a2;
-	args[3] = a3;
-	args[4] = a4;
-	args[5] = a5;
-	args[6] = a6;
-	args[7] = a7;
-	return t0;
-}
+struct s3k_memory {
+	uint64_t type : 4;
+	uint64_t begin : 16;
+	uint64_t free : 16;
+	uint64_t end : 16;
+	uint64_t offset : 8;
+	uint64_t lrwx : 4;
+};
 
-static inline unsigned long s3k_get_pid(void)
-{
-	unsigned long args[8];
-	_S3K_SYSCALL(S3K_SYSCALL_GET_PID, args, 0);
-	return args[0];
-}
+struct s3k_pmp {
+	uint64_t type : 4;
+	uint64_t cfg : 3;
+	uint64_t addr : 16;
+};
 
-static inline unsigned long s3k_get_reg(unsigned long reg)
-{
-	unsigned long args[8] = {reg};
-	if (_S3K_SYSCALL(S3K_SYSCALL_GET_REG, args, 1) == 0)
-		return args[0];
-	return -1;
-}
+struct s3k_monitor {
+	uint64_t type : 4;
+	uint64_t begin : 16;
+	uint64_t free : 16;
+	uint64_t end : 16;
+};
 
-static inline unsigned long s3k_set_reg(unsigned long reg, unsigned long val)
-{
-	unsigned long args[8] = {reg, val};
-	return _S3K_SYSCALL(S3K_SYSCALL_GET_REG, args, 2);
-}
+struct s3k_channel {
+	uint64_t type : 4;
+	uint64_t begin : 16;
+	uint64_t free : 16;
+	uint64_t end : 16;
+};
 
-static inline unsigned long s3k_yield(void)
-{
-	unsigned long args[8] = {};
-	return _S3K_SYSCALL(S3K_SYSCALL_YIELD, args, 0);
-}
+struct s3k_socket {
+	uint64_t type : 4;
+	uint64_t port : 16;
+	uint64_t tag : 16;
+};
 
-unsigned long s3k_read_cap(unsigned long i, cap_t *c)
-{
-	unsigned long args[8] = {i};
-	unsigned long code = _S3K_SYSCALL(S3K_SYSCALL_READ_CAP, args, 1);
-	if (!code)
-		*c = (cap_t){args[0], args[1]};
-	return code;
-}
+/// Capability description
+union s3k_cap {
+	uint64_t type : 4;
+	uint64_t raw;
+	struct s3k_time time;
+	struct s3k_memory memory;
+	struct s3k_pmp pmp;
+	struct s3k_monitor monitor;
+	struct s3k_channel channel;
+	struct s3k_socket socket;
+};
 
-unsigned long s3k_move_cap(unsigned long i, unsigned long j)
-{
-	unsigned long args[8] = {i, j};
-	return _S3K_SYSCALL(S3K_SYSCALL_MOVE_CAP, args, 2);
-}
+/**
+ * @defgroup api-syscall System Calls
+ *
+ * System calls for user processes.
+ *
+ * @{
+ */
 
-unsigned long s3k_delete_cap(unsigned long i)
-{
-	unsigned long args[8] = {i};
-	return _S3K_SYSCALL(S3K_SYSCALL_DELETE_CAP, args, 1);
-}
+/// S3K Syscall Numbers
+typedef enum s3k_syscall {
+	// Capabilityless syscalls
+	S3K_SYSCALL_GETPID,  ///< Get process ID
+	S3K_SYSCALL_GETREG,  ///< Get register value
+	S3K_SYSCALL_SETREG,  ///< Set register value
+	S3K_SYSCALL_YIELD,   ///< Yield remaining time slice
+	// Capability syscalls
+	S3K_SYSCALL_GETCAP,  ///< Get capability description
+	S3K_SYSCALL_MOVCAP,  ///< Move capability
+	S3K_SYSCALL_DELCAP,  ///< Delete capability
+	S3K_SYSCALL_REVCAP,  ///< Revoke capability
+	S3K_SYSCALL_DRVCAP,  ///< Derive capability
+	// IPC syscalls
+	S3K_SYSCALL_RECV,      ///< Receive message/capability
+	S3K_SYSCALL_SEND,      ///< Send message/capability
+	S3K_SYSCALL_SENDRECV,  ///< Send then receive message/capability
+	// Monitor syscalls
+	S3K_SYSCALL_MSUSPEND,  ///< Monitor suspend process
+	S3K_SYSCALL_MRESUME,   ///< Monitor resume process
+	S3K_SYSCALL_MGETREG,   ///< Monitor get register value
+	S3K_SYSCALL_MSETREG,   ///< Monitor set register value
+	S3K_SYSCALL_MGETCAP,   ///< Monitor get capability description
+	S3K_SYSCALL_MGIVECAP,  ///< Monitor give capability
+	S3K_SYSCALL_MTAKECAP,  ///< Monitor take capability
+} s3k_syscall_t;
 
-unsigned long s3k_revoke_cap(unsigned long i)
-{
-	unsigned long args[8] = {i};
-	return _S3K_SYSCALL(S3K_SYSCALL_REVOKE_CAP, args, 1);
-}
+/**
+ * @brief Get the process ID.
+ *
+ * @return Process ID.
+ */
+uint64_t s3k_getpid(void);
 
-unsigned long s3k_derive_cap(unsigned long i, unsigned long j, cap_t c)
-{
-	unsigned long args[8] = {i, j, c.word0, c.word1};
-	return _S3K_SYSCALL(S3K_SYSCALL_DERIVE_CAP, args, 4);
-}
+/**
+ * @brief Get the value of a register.
+ *
+ * @param reg Register ID.
+ * @return Read value.
+ * @warning Register IDs that are out-of-range are silently ignored.
+ */
+uint64_t s3k_getreg(enum s3k_reg reg);
 
-unsigned long s3k_supervisor_suspend(unsigned long i, unsigned long pid)
-{
-	unsigned long args[8] = {i, pid};
-	return _S3K_SYSCALL(S3K_SYSCALL_SUP_SUSPEND, args, 2);
-}
+/**
+ * @brief Read and set value.
+ *
+ * @param reg Register ID.
+ * @param val Value to write.
+ * @return Read value.
+ * @warning Register IDs that are out-of-range are silently ignored.
+ */
+uint64_t s3k_setreg(enum s3k_reg reg, uint64_t val);
 
-unsigned long s3k_supervisor_resume(unsigned long i, unsigned long pid)
-{
-	unsigned long args[8] = {i, pid};
-	return _S3K_SYSCALL(S3K_SYSCALL_SUP_RESUME, args, 2);
-}
+/**
+ * @brief Yield remaining time slice.
+ */
+void s3k_yield(void);
 
-unsigned long s3k_supervisor_get_state(unsigned long i, unsigned long pid)
-{
-	unsigned long args[8] = {i, pid};
-	if (!_S3K_SYSCALL(S3K_SYSCALL_SUP_RESUME, args, 2))
-		return args[0];
-	return -1;
-}
+/**
+ * @brief Reads a capability description.
+ *
+ * @param i Index of capability table.
+ * @param cap Destination for a serialized capability description.
+ * @return `S3K_EXCPT_INDEX` if index i or j is out-of-range.
+ * @return `S3K_EXCPT_NONE` if capability was read.
+ * @note The read capability may have type `S3K_CAPTY_NONE`.
+ */
+enum s3k_excpt s3k_getcap(uint64_t i, union s3k_cap *cap);
 
-unsigned long s3k_supervisor_get_reg(unsigned long i, unsigned long pid, unsigned long *reg)
-{
-	unsigned long args[8] = {i, pid, *reg};
-	unsigned long code = _S3K_SYSCALL(S3K_SYSCALL_SUP_SET_REG, args, 3);
-	*reg = args[0];
-	return code;
-}
+/**
+ * @brief Moves a capability.
+ *
+ * @param i Index of the capability to move.
+ * @param j Destination index.
+ * @return `S3K_EXCPT_INDEX` if index i or j is out-of-range.
+ * @return `S3K_EXCPT_EMPTY` if slot i is empty.
+ * @return `S3K_EXCPT_NONE` if move was successful.
+ */
+enum s3k_excpt s3k_movcap(uint64_t i, uint64_t j);
 
-unsigned long s3k_supervisor_set_reg(unsigned long i, unsigned long pid, unsigned long reg,
-				     unsigned long val)
-{
-	unsigned long args[8] = {i, pid, reg, val};
-	return _S3K_SYSCALL(S3K_SYSCALL_SUP_SET_REG, args, 4);
-}
+/**
+ * @brief Deletes a capability.
+ *
+ * @param i Index of the capability to delete.
+ * @return `S3K_EXCPT_INDEX` if index i is out-of-range.
+ * @return `S3K_EXCPT_EMPTY` if slot i is empty.
+ * @return `S3K_EXCPT_NONE` if deletion was successful.
+ */
+enum s3k_excpt s3k_delcap(uint64_t i);
 
-unsigned long s3k_supervisor_read_cap(unsigned long i, unsigned long pid, unsigned long cid,
-				      cap_t *cap)
-{
-	unsigned long args[8] = {i, pid};
-	unsigned long code = _S3K_SYSCALL(S3K_SYSCALL_SUP_SET_REG, args, 2);
-	if (!code) {
-		cap->word0 = args[0];
-		cap->word1 = args[1];
-	}
-	return code;
-}
+/**
+ * @brief Revokes a capability.
+ *
+ * Deletes all of of the capabilities descendants.
+ *
+ * @param i Index of the capability to revoke.
+ * @return `S3K_EXCPT_INDEX` if index i is out-of-range.
+ * @return `S3K_EXCPT_EMPTY` if slot i is empty.
+ * @return `S3K_EXCPT_PREEMPTED` if the system call is preempted.
+ * @return `S3K_EXCPT_NONE` if revokation was successful.
+ * @warning If preempted, only a subset of the descendants will be deleted.
+ */
+enum s3k_excpt s3k_revcap(uint64_t i);
 
-unsigned long s3k_supervisor_move_cap(unsigned long i, unsigned long pid, unsigned long take,
-				      unsigned long src, unsigned long dest)
-{
-	unsigned long args[8] = {i, pid, take, src, dest};
-	return _S3K_SYSCALL(S3K_SYSCALL_SUP_MOVE_CAP, args, 5);
-}
+/**
+ * @brief Derives a new capability.
+ *
+ * Creates a new capability based on another. Capability derivation will fail if the corresponding
+ * `s3k_cap_deriveable` call returns false.
+ *
+ * @param i Index of the capability to revoke.
+ * @param j Destination index.
+ * @param cap Description of the derived capability.
+ * @return `S3K_EXCPT_INDEX` if index i or j is out-of-range.
+ * @return `S3K_EXCPT_EMPTY` if slot i is empty.
+ * @return `S3K_EXCPT_OCCUPIED` if slot j is occupied.
+ * @return `S3K_EXCPT_DERIVATION` if slot cap can **not** be derived from the capability in index i.
+ * @return `S3K_EXCPT_NONE` if capability was successfully derived.
+ */
+enum s3k_excpt s3k_drvcap(uint64_t i, uint64_t j, union s3k_cap cap);
+
+enum s3k_excpt s3kReceive(void);
+enum s3k_excpt s3kSend(void);
+enum s3k_excpt s3kSendReceive(void);
+/**
+ * @brief Monitor suspends a process.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process to suspend.
+ * @return TODO
+ */
+enum s3k_excpt s3k_msuspend(uint64_t i, uint64_t pid);
+/**
+ * @brief Monitor resumes a process.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process to resume.
+ * @return TODO
+ */
+enum s3k_excpt s3k_mresume(uint64_t i, uint64_t pid);
+/**
+ * @brief Monitor reads a process's register.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process...
+ * @param reg Register to read
+ * @param val Read value
+ * @return TODO
+ */
+enum s3k_excpt s3k_mgetreg(uint64_t i, uint64_t pid, enum s3k_reg reg, uint64_t *val);
+/**
+ * @brief Monitor write a process's register.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process...
+ * @param reg Register to read
+ * @param val Value to write
+ * @return TODO
+ */
+enum s3k_excpt s3k_msetreg(uint64_t i, uint64_t pid, enum s3k_reg reg, uint64_t val);
+/**
+ * @brief Monitor read process's capability.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process to read capability of.
+ * @param j Index of capability to read
+ * @param cap Read capability
+ * @return TODO
+ */
+enum s3k_excpt s3k_mgetcap(uint64_t i, uint64_t pid, uint64_t j, union s3k_cap *cap);
+/**
+ * @brief Monitor give a capability to a process.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process to give capability.
+ * @param src Index of capability to give
+ * @param dst Destination of capability
+ * @return TODO
+ */
+enum s3k_excpt s3k_mgivecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst);
+/**
+ * @brief Monitor take a capability from a process.
+ *
+ * @param i Index to monitor capability.
+ * @param pid Process to take capability from.
+ * @param src Index of capability to take
+ * @param dst Destination of capability
+ * @return TODO
+ */
+enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst);
+/// @}
+
+/**************************** API UTILITY *********************************/
+union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t free, uint64_t end);
+union s3k_cap s3k_memory(uint64_t begin, uint64_t free, uint64_t end, uint64_t offset,
+			 uint64_t lrwx);
+union s3k_cap s3k_pmp(uint64_t cfg, uint64_t addr);
+union s3k_cap s3k_monitor(uint64_t begin, uint64_t free, uint64_t end);
+union s3k_cap s3k_channel(uint64_t begin, uint64_t free, uint64_t end);
+union s3k_cap s3k_socket(uint64_t port, uint64_t tag);
+bool s3k_time_derive_time(struct s3k_time parent, struct s3k_time child);
+bool s3k_memory_derive_memory(struct s3k_memory parent, struct s3k_memory child);
+bool s3k_monitor_derive_monitor(struct s3k_monitor parent, struct s3k_monitor child);
+bool s3k_channel_derive_channel(struct s3k_channel parent, struct s3k_channel child);
+bool s3k_channel_derive_socket(struct s3k_channel parent, struct s3k_socket child);
+bool s3k_socket_derive_socket(struct s3k_socket parent, struct s3k_socket child);
+bool s3k_time_derive(union s3k_cap parent, union s3k_cap child);
+bool s3k_memory_derive(union s3k_cap parent, union s3k_cap child);
+bool s3k_monitor_derive(union s3k_cap parent, union s3k_cap child);
+bool s3k_channel_derive(union s3k_cap parent, union s3k_cap child);
+bool s3k_socket_derive(union s3k_cap parent, union s3k_cap child);
+
+/// @}
+
+#endif /* _S3K_H_ */
