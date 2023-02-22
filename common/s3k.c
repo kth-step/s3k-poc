@@ -35,9 +35,8 @@ void s3k_yield(void)
 union s3k_cap s3k_getcap(uint64_t i)
 {
 	register uint64_t a0 __asm__("a0") = i;
-	register uint64_t a1 __asm__("a1");
 	register uint64_t a7 __asm__("a7") = S3K_SYSCALL_GETCAP;
-	__asm__ volatile("ecall" : "+r"(a0), "=r"(a1) : "r"(a7));
+	__asm__ volatile("ecall" : "+r"(a0) : "r"(a7));
 	return (union s3k_cap){.raw = a0};
 }
 
@@ -72,13 +71,9 @@ enum s3k_excpt s3k_drvcap(uint64_t i, uint64_t j, union s3k_cap cap)
 	register uint64_t a1 __asm__("a1") = j;
 	register uint64_t a2 __asm__("a2") = cap.raw;
 	register uint64_t a7 __asm__("a7") = S3K_SYSCALL_DRVCAP;
-	__asm__("ecall" : "+r"(a0) : "r"(a1), "r"(a2), "r"(a7));
+	__asm__ volatile("ecall" : "+r"(a0) : "r"(a1), "r"(a2), "r"(a7));
 	return a0;
 }
-
-enum s3k_excpt s3k_recv(void);
-enum s3k_excpt s3k_send(void);
-enum s3k_excpt s3k_sendrecv(void);
 
 enum s3k_excpt s3k_msuspend(uint64_t i, uint64_t pid)
 {
@@ -133,17 +128,6 @@ enum s3k_excpt s3k_mgetcap(uint64_t i, uint64_t pid, uint64_t j, union s3k_cap *
 	return a0;
 }
 
-enum s3k_excpt s3k_mgivecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst)
-{
-	register uint64_t a0 __asm__("a0") = i;
-	register uint64_t a1 __asm__("a1") = pid;
-	register uint64_t a2 __asm__("a2") = src;
-	register uint64_t a3 __asm__("a3") = dst;
-	register uint64_t a7 __asm__("a7") = S3K_SYSCALL_MGIVECAP;
-	__asm__ volatile("ecall" : "+r"(a0) : "r"(a1), "r"(a2), "r"(a3), "r"(a7));
-	return a0;
-}
-
 enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst)
 {
 	register uint64_t a0 __asm__("a0") = i;
@@ -155,48 +139,76 @@ enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst
 	return a0;
 }
 
-union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t free, uint64_t end)
+enum s3k_excpt s3k_mgivecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst)
 {
-	return (union s3k_cap){.time = {S3K_CAPTY_TIME, hartid, begin, free, end}};
+	register uint64_t a0 __asm__("a0") = i;
+	register uint64_t a1 __asm__("a1") = pid;
+	register uint64_t a2 __asm__("a2") = src;
+	register uint64_t a3 __asm__("a3") = dst;
+	register uint64_t a7 __asm__("a7") = S3K_SYSCALL_MGIVECAP;
+	__asm__ volatile("ecall" : "+r"(a0) : "r"(a1), "r"(a2), "r"(a3), "r"(a7));
+	return a0;
 }
 
-union s3k_cap s3k_memory(uint64_t begin, uint64_t free, uint64_t end, uint64_t offset,
-			 uint64_t lrwx)
+enum s3k_excpt s3k_recv(void);
+enum s3k_excpt s3k_send(void);
+enum s3k_excpt s3k_sendrecv(void);
+
+uint64_t pmp_napot_addr(uint64_t begin, uint64_t end)
 {
-	return (union s3k_cap){.memory = {S3K_CAPTY_MEMORY, begin, free, end, offset, lrwx}};
+	return (begin | (((end - begin) - 1) >> 1)) >> 2;
+}
+
+uint64_t pmp_napot_begin(uint64_t addr)
+{
+	return (((addr + 1) | addr) + 1) << 2;
+}
+
+uint64_t pmp_napot_end(uint64_t addr)
+{
+	return ((addr + 1) & addr) << 2;
+}
+
+union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t end)
+{
+	return (union s3k_cap){.time = {S3K_CAPTY_TIME, 0, hartid, begin, begin, end}};
+}
+
+union s3k_cap s3k_memory(uint64_t begin, uint64_t end, uint64_t offset, uint64_t rwx)
+{
+	return (union s3k_cap){.memory = {S3K_CAPTY_MEMORY, false, rwx, offset, begin, begin, end}};
 }
 
 union s3k_cap s3k_pmp(uint64_t cfg, uint64_t addr)
 {
-	return (union s3k_cap){.pmp = {S3K_CAPTY_PMP, cfg, addr}};
+	return (union s3k_cap){.pmp = {S3K_CAPTY_PMP, cfg, addr, 0}};
 }
 
-union s3k_cap s3k_monitor(uint64_t begin, uint64_t free, uint64_t end)
+union s3k_cap s3k_monitor(uint64_t begin, uint64_t end)
 {
-	return (union s3k_cap){.monitor = {S3K_CAPTY_MONITOR, begin, free, end}};
+	return (union s3k_cap){.monitor = {S3K_CAPTY_MONITOR, 0, begin, begin, end}};
 }
 
-union s3k_cap s3k_channel(uint64_t begin, uint64_t free, uint64_t end)
+union s3k_cap s3k_channel(uint64_t begin, uint64_t end)
 {
-	return (union s3k_cap){.channel = {S3K_CAPTY_CHANNEL, begin, free, end}};
+	return (union s3k_cap){.channel = {S3K_CAPTY_CHANNEL, 0, begin, begin, end}};
 }
 
-union s3k_cap s3k_socket(uint64_t port, uint64_t tag)
+union s3k_cap s3k_socket(uint64_t channel, uint64_t tag)
 {
-	return (union s3k_cap){.socket = {S3K_CAPTY_SOCKET, port, tag}};
+	return (union s3k_cap){.socket = {S3K_CAPTY_SOCKET, 0, channel, tag}};
 }
 
 bool s3k_time_derive_time(struct s3k_time parent, struct s3k_time child)
 {
 	return parent.free <= child.begin && child.end <= parent.end && child.begin == child.free &&
-	       child.begin < child.end;
+	       child.begin < child.end && child._padd == 0;
 }
 
 bool s3k_memory_derive_memory(struct s3k_memory parent, struct s3k_memory child)
 {
 	return parent.free <= child.begin && child.end <= parent.end && child.begin == child.free &&
-	       child.begin < child.end && (parent.lrwx & child.lrwx) == child.lrwx &&
-	       (parent.lrwx & 0x8) == 0;
+	       child.begin < child.end && (parent.rwx & child.rwx) == child.rwx && parent.lock == 0;
 }
 
 bool s3k_monitor_derive_monitor(struct s3k_monitor parent, struct s3k_monitor child)
@@ -208,17 +220,19 @@ bool s3k_monitor_derive_monitor(struct s3k_monitor parent, struct s3k_monitor ch
 bool s3k_channel_derive_channel(struct s3k_channel parent, struct s3k_channel child)
 {
 	return parent.free <= child.begin && child.end <= parent.end && child.begin == child.free &&
-	       child.begin < child.end;
+	       child.begin < child.end && child._padd == 0;
 }
 
 bool s3k_channel_derive_socket(struct s3k_channel parent, struct s3k_socket child)
 {
-	return parent.free <= child.port && child.port < parent.end && child.tag == 0;
+	return parent.free <= child.channel && child.channel < parent.end && child.tag == 0 &&
+	       child._padd == 0;
 }
 
 bool s3k_socket_derive_socket(struct s3k_socket parent, struct s3k_socket child)
 {
-	return parent.port == child.port && parent.tag == 0 && child.tag > 0;
+	return parent.channel == child.channel && parent.tag == 0 && child.tag > 0 &&
+	       child._padd == 0;
 }
 
 bool s3k_time_derive(union s3k_cap parent, union s3k_cap child)
@@ -249,6 +263,82 @@ bool s3k_channel_derive(union s3k_cap parent, union s3k_cap child)
 
 bool s3k_socket_derive(union s3k_cap parent, union s3k_cap child)
 {
-	return (parent.type == S3K_CAPTY_SOCKET && child.type == S3K_CAPTY_SOCKET &&
-		s3k_socket_derive_socket(parent.socket, child.socket));
+	return parent.type == S3K_CAPTY_SOCKET && child.type == S3K_CAPTY_SOCKET &&
+	       s3k_socket_derive_socket(parent.socket, child.socket);
+}
+
+bool s3k_can_derive(union s3k_cap parent, union s3k_cap child)
+{
+	return s3k_time_derive(parent, child) || s3k_memory_derive(parent, child) ||
+	       s3k_monitor_derive(parent, child) || s3k_channel_derive(parent, child) ||
+	       s3k_socket_derive(parent, child);
+}
+
+bool s3k_time_parent_time(struct s3k_time parent, struct s3k_time child)
+{
+	return parent.begin <= child.begin && child.end <= parent.free;
+}
+
+bool s3k_memory_parent_memory(struct s3k_memory parent, struct s3k_memory child)
+{
+	return parent.begin <= child.begin && child.end <= parent.free;
+}
+
+bool s3k_monitor_parent_monitor(struct s3k_monitor parent, struct s3k_monitor child)
+{
+	return parent.begin <= child.begin && child.end <= parent.free;
+}
+
+bool s3k_channel_parent_channel(struct s3k_channel parent, struct s3k_channel child)
+{
+	return parent.begin <= child.begin && child.end <= parent.free;
+}
+
+bool s3k_channel_parent_socket(struct s3k_channel parent, struct s3k_socket child)
+{
+	return parent.begin <= child.channel && child.channel <= parent.free;
+}
+
+bool s3k_socket_parent_socket(struct s3k_socket parent, struct s3k_socket child)
+{
+	return parent.tag == 0 && parent.channel == child.channel;
+}
+
+bool s3k_time_parent(union s3k_cap parent, union s3k_cap child)
+{
+	return parent.type == S3K_CAPTY_TIME && child.type == S3K_CAPTY_TIME &&
+	       s3k_time_parent_time(parent.time, child.time);
+}
+
+bool s3k_memory_parent(union s3k_cap parent, union s3k_cap child)
+{
+	return parent.type == S3K_CAPTY_MEMORY && child.type == S3K_CAPTY_MEMORY &&
+	       s3k_memory_parent_memory(parent.memory, child.memory);
+}
+
+bool s3k_monitor_parent(union s3k_cap parent, union s3k_cap child)
+{
+	return parent.type == S3K_CAPTY_MONITOR && child.type == S3K_CAPTY_MONITOR &&
+	       s3k_monitor_parent_monitor(parent.monitor, child.monitor);
+}
+
+bool s3k_channel_parent(union s3k_cap parent, union s3k_cap child)
+{
+	return (parent.type == S3K_CAPTY_CHANNEL && child.type == S3K_CAPTY_CHANNEL &&
+		s3k_channel_parent_channel(parent.channel, child.channel)) ||
+	       (parent.type == S3K_CAPTY_CHANNEL && child.type == S3K_CAPTY_SOCKET &&
+		s3k_channel_parent_socket(parent.channel, child.socket));
+}
+
+bool s3k_socket_parent(union s3k_cap parent, union s3k_cap child)
+{
+	return parent.type == S3K_CAPTY_SOCKET && child.type == S3K_CAPTY_SOCKET &&
+	       s3k_socket_parent_socket(parent.socket, child.socket);
+}
+
+bool s3k_is_parent(union s3k_cap parent, union s3k_cap child)
+{
+	return s3k_time_parent(parent, child) || s3k_memory_parent(parent, child) ||
+	       s3k_monitor_parent(parent, child) || s3k_channel_parent(parent, child) ||
+	       s3k_socket_parent(parent, child);
 }

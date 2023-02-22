@@ -16,7 +16,7 @@
 #define APP0_PID    5
 #define APP1_PID    6
 
-#define MONCAP 13
+#define MONCAP 6
 
 /* Program memory */
 char uart_mem[MEMSIZE] NOINIT ALIGNED(MEMSIZE);
@@ -27,9 +27,11 @@ char app1_mem[2][MEMSIZE] NOINIT ALIGNED(MEMSIZE);
 /* Shared memory */
 volatile char uart_buf[64] NOINIT ALIGNED(64);
 
-void setup_process(int pid, char mem[MEMSIZE])
+void setup_uart(void)
 {
-	s3k_msetreg(MONCAP, pid, S3K_REG_PC, (uint64_t)mem);
+	s3k_msetreg(MONCAP, UART_PID, S3K_REG_PC, (uint64_t)uart_mem);
+	s3k_msetreg(MONCAP, UART_PID, S3K_REG_A0, (uint64_t)uart_buf);
+	s3k_msetreg(MONCAP, UART_PID, S3K_REG_A1, (uint64_t)sizeof(uart_buf));
 	/* TODO: Memory/PMP slices */
 }
 
@@ -41,26 +43,26 @@ void setup(void)
 	memcpy(app0_mem[0], app0_bin, app0_bin_len);
 	memcpy(app1_mem[0], app1_bin, app1_bin_len);
 
-	setup_process(UART_PID, uart_mem);
-	// setup_process(CRYPTO_PID, crypto_mem, crypto_buf, ARRAY_SIZE(crypto_buf));
-	setup_process(APP0_PID, app0_mem[0]);
-	setup_process(APP1_PID, app1_mem[0]);
+	setup_uart();
 
 	/* Delete time on core 2 3 4. */
-	s3k_delcap(10);
-	s3k_delcap(11);
-	s3k_delcap(12);
+	s3k_delcap(3);
+	s3k_delcap(4);
+	s3k_delcap(5);
 
 	/* Derive time for uart */
-	s3k_drvcap(9, 10, s3k_time(1, 0, 0, 4));
-	s3k_mgivecap(MONCAP, UART_PID, 10, 8);
+	s3k_drvcap(2, 10, s3k_time(0, 0, 4));
+	s3k_mgivecap(MONCAP, UART_PID, 10, 2);
 
 	/* Start uart */
 	s3k_mresume(MONCAP, UART_PID);
+	s3k_yield();
 }
 
 void loop(void)
 {
+	if (!uart_buf[32])
+		s3k_yield();
 	switch (uart_buf[0]) {
 	/* App 0 cases */
 	case 0x00: /* Set PC to memory 0 */
@@ -88,5 +90,8 @@ void loop(void)
 		break;
 	case 0x1F: /* Copy data from uart to app1 */
 		break;
+	case 0xFF:
+		break;
 	}
+	s3k_yield();
 }

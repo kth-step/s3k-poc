@@ -107,46 +107,58 @@ enum s3k_reg {
 	S3K_REG_COUNT	///< *Number of S3K registers.*
 };
 
+/// Time slice capability
 struct s3k_time {
 	uint64_t type : 4;
+	uint64_t _padd : 4;
 	uint64_t hartid : 8;
 	uint64_t begin : 16;
 	uint64_t free : 16;
 	uint64_t end : 16;
 };
 
+/// Memory Slice capability
 struct s3k_memory {
 	uint64_t type : 4;
+	uint64_t lock : 1;
+	uint64_t rwx : 3;
+	uint64_t offset : 8;
 	uint64_t begin : 16;
 	uint64_t free : 16;
 	uint64_t end : 16;
-	uint64_t offset : 8;
-	uint64_t lrwx : 4;
 };
 
+/// PMP Frame capability
 struct s3k_pmp {
 	uint64_t type : 4;
-	uint64_t cfg : 3;
-	uint64_t addr : 16;
+	uint64_t cfg : 8;
+	uint64_t addr : 34;
+	uint64_t _padd : 18;
 };
 
+/// Monitor capability
 struct s3k_monitor {
 	uint64_t type : 4;
+	uint64_t _padd : 12;
 	uint64_t begin : 16;
 	uint64_t free : 16;
 	uint64_t end : 16;
 };
 
+/// Channel capability
 struct s3k_channel {
 	uint64_t type : 4;
+	uint64_t _padd : 12;
 	uint64_t begin : 16;
 	uint64_t free : 16;
 	uint64_t end : 16;
 };
 
+/// Socket capability
 struct s3k_socket {
 	uint64_t type : 4;
-	uint64_t port : 16;
+	uint64_t _padd : 28;
+	uint64_t channel : 16;
 	uint64_t tag : 16;
 };
 
@@ -161,6 +173,8 @@ union s3k_cap {
 	struct s3k_channel channel;
 	struct s3k_socket socket;
 };
+
+_Static_assert(sizeof(union s3k_cap) == 8, "sizeof(union s3k_cap) != 8");
 
 /**
  * @defgroup api-syscall System Calls
@@ -183,18 +197,18 @@ typedef enum s3k_syscall {
 	S3K_SYSCALL_DELCAP,  ///< Delete capability
 	S3K_SYSCALL_REVCAP,  ///< Revoke capability
 	S3K_SYSCALL_DRVCAP,  ///< Derive capability
-	// IPC syscalls
-	S3K_SYSCALL_RECV,      ///< Receive message/capability
-	S3K_SYSCALL_SEND,      ///< Send message/capability
-	S3K_SYSCALL_SENDRECV,  ///< Send then receive message/capability
 	// Monitor syscalls
 	S3K_SYSCALL_MSUSPEND,  ///< Monitor suspend process
 	S3K_SYSCALL_MRESUME,   ///< Monitor resume process
 	S3K_SYSCALL_MGETREG,   ///< Monitor get register value
 	S3K_SYSCALL_MSETREG,   ///< Monitor set register value
 	S3K_SYSCALL_MGETCAP,   ///< Monitor get capability description
-	S3K_SYSCALL_MGIVECAP,  ///< Monitor give capability
 	S3K_SYSCALL_MTAKECAP,  ///< Monitor take capability
+	S3K_SYSCALL_MGIVECAP,  ///< Monitor give capability
+	// IPC syscalls
+	S3K_SYSCALL_RECV,      ///< Receive message/capability
+	S3K_SYSCALL_SEND,      ///< Send message/capability
+	S3K_SYSCALL_SENDRECV,  ///< Send then receive message/capability
 } s3k_syscall_t;
 
 /**
@@ -360,24 +374,52 @@ enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst
 /// @}
 
 /**************************** API UTILITY *********************************/
-union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t free, uint64_t end);
-union s3k_cap s3k_memory(uint64_t begin, uint64_t free, uint64_t end, uint64_t offset,
-			 uint64_t lrwx);
+
+/**
+ * @brief Returns a PMP NAPOT representation of the address range.
+ * @param begin Start of the range
+ * @param end End of the range
+ * @return The PMP NAPOT representation of the range.
+ * @warning If there is not NAPOT representation, then returns 0.
+ */
+uint64_t pmp_napot_addr(uint64_t begin, uint64_t end) __attribute__((const));
+/**
+ * @brief Returns start of the range of PMP NAPOT address.
+ * @param addr The PMP NAPOT address.
+ * @return The start of the address range.
+ */
+uint64_t pmp_napot_begin(uint64_t addr);
+
+/**
+ * @brief Returns the end of the range of PMP NAPOT address.
+ * @param addr The PMP NAPOT address
+ * @return The end of the address range.
+ */
+uint64_t pmp_napot_end(uint64_t addr);
+/// Create a time slice capability
+union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t end);
+/// Create a memory slice capability
+union s3k_cap s3k_memory(uint64_t begin, uint64_t end, uint64_t offset, uint64_t rwx);
+/// Create a PMP frame capability
 union s3k_cap s3k_pmp(uint64_t cfg, uint64_t addr);
-union s3k_cap s3k_monitor(uint64_t begin, uint64_t free, uint64_t end);
-union s3k_cap s3k_channel(uint64_t begin, uint64_t free, uint64_t end);
+/// Create a monitor slice capability
+union s3k_cap s3k_monitor(uint64_t begin, uint64_t end);
+/// Create a channel slice capability
+union s3k_cap s3k_channel(uint64_t begin, uint64_t end);
+/// Create a socket capability
 union s3k_cap s3k_socket(uint64_t port, uint64_t tag);
-bool s3k_time_derive_time(struct s3k_time parent, struct s3k_time child);
-bool s3k_memory_derive_memory(struct s3k_memory parent, struct s3k_memory child);
-bool s3k_monitor_derive_monitor(struct s3k_monitor parent, struct s3k_monitor child);
-bool s3k_channel_derive_channel(struct s3k_channel parent, struct s3k_channel child);
-bool s3k_channel_derive_socket(struct s3k_channel parent, struct s3k_socket child);
-bool s3k_socket_derive_socket(struct s3k_socket parent, struct s3k_socket child);
 bool s3k_time_derive(union s3k_cap parent, union s3k_cap child);
 bool s3k_memory_derive(union s3k_cap parent, union s3k_cap child);
 bool s3k_monitor_derive(union s3k_cap parent, union s3k_cap child);
 bool s3k_channel_derive(union s3k_cap parent, union s3k_cap child);
 bool s3k_socket_derive(union s3k_cap parent, union s3k_cap child);
+bool s3k_can_derive(union s3k_cap parent, union s3k_cap child);
+bool s3k_time_parent(union s3k_cap parent, union s3k_cap child);
+bool s3k_memory_parent(union s3k_cap parent, union s3k_cap child);
+bool s3k_monitor_parent(union s3k_cap parent, union s3k_cap child);
+bool s3k_channel_parent(union s3k_cap parent, union s3k_cap child);
+bool s3k_socket_parent(union s3k_cap parent, union s3k_cap child);
+bool s3k_is_parent(union s3k_cap parent, union s3k_cap child);
 
 /// @}
 

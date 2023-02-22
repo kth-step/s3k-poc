@@ -11,17 +11,19 @@
 #define NCAP 64
 
 /* Number of time slices in a major frame. */
-#define NSLICE 4
+#define NSLICE 32
 
 /* Number of communications channels */
 #define NPORT 8
 
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
-#define NTICK 1000
+#define NTICK 100000
 
 /* Number of scheduler ticks. */
-#define NSLACK 100
+#define NSLACK 10000
+
+#define NDEBUG
 
 /* Uncomment to enable memory protection */
 // #define MEMORY_PROTECTION
