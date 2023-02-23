@@ -33,10 +33,11 @@ riscv64-unknown-elf-gdb                                 \
         -ex "set confirm off"                           \
         -ex "set pagination off"                        \
         -ex "symbol-file $KERNEL"                       \
-        -ex "add-symbol-file $PAYLOAD -o 0x80010000"    \
+        -ex "add-symbol-file $PAYLOAD"    \
         -ex "j 0x80000000"                              \
         -ex "b _hang"                                   \
         -ex "b *0x80010000"                             \
+	-ex "b handle_exception"                        \
         -ex "target remote localhost:1234"              \
         -ex "layout split"                              \
         -ex "fs cmd"

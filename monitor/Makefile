@@ -6,7 +6,7 @@ vpath %.S ../common
 
 CSRC=main.c s3k.c
 ASSRC=start.S payload.S common.S
-LDS=../default.lds
+LDS=../monitor.lds
 BASE_ADDR=0x80010000
 
 BIN=../app0/app0.bin ../app1/app1.bin ../uart/uart.bin

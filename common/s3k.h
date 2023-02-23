@@ -19,6 +19,11 @@
 ///
 /// @{
 
+#define S3K_RWX 0x7
+#define S3K_RW	0x3
+#define S3K_RX	0x5
+#define S3K_R	0x1
+
 /**
  * @brief Enumeration S3K system call exception codes.
  *
@@ -401,7 +406,7 @@ union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t end);
 /// Create a memory slice capability
 union s3k_cap s3k_memory(uint64_t begin, uint64_t end, uint64_t offset, uint64_t rwx);
 /// Create a PMP frame capability
-union s3k_cap s3k_pmp(uint64_t cfg, uint64_t addr);
+union s3k_cap s3k_pmp(uint64_t addr, uint64_t rwx);
 /// Create a monitor slice capability
 union s3k_cap s3k_monitor(uint64_t begin, uint64_t end);
 /// Create a channel slice capability
