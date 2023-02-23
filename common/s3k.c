@@ -161,12 +161,12 @@ uint64_t pmp_napot_addr(uint64_t begin, uint64_t end)
 
 uint64_t pmp_napot_begin(uint64_t addr)
 {
-	return (((addr + 1) | addr) + 1) << 2;
+	return ((addr + 1) & addr) << 2;
 }
 
 uint64_t pmp_napot_end(uint64_t addr)
 {
-	return ((addr + 1) & addr) << 2;
+	return (((addr + 1) | addr) + 1) << 2;
 }
 
 union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t end)
