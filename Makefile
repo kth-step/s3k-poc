@@ -15,10 +15,13 @@ clean:
 	git clean -fdX
 	${MAKE} -C ${dir ${KERNEL}} clean
 
-api:
-	mkdir -p common/s3k
+common/s3k.h: ../s3k/api/s3k.h
 	cp ../s3k/api/s3k.h common/s3k.h
+
+common/s3k.c: ../s3k/api/s3k.c
 	cp ../s3k/api/s3k.c common/s3k.c
+
+api: common/s3k.h common/s3k.c
 
 ${MONITOR}: api
 	${MAKE} -C ${@D} ${@F}
