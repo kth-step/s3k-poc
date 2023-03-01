@@ -63,8 +63,6 @@ void setup_uart(void)
 	while (s3k_drvcap(CAP_MEM_MAIN, 12, buffercap))
 		;
 	s3k_setreg(S3K_REG_PMP, 0x0b00);
-	s3k_yield();
-	__sync_synchronize();
 	// Copy the uart bin to uart's main memory.
 	memcpy(uart_mem, uart_bin, uart_bin_len);
 

@@ -106,13 +106,22 @@ enum s3k_reg {
 	S3K_REG_T5,   ///< Temporary register (GPR)
 	S3K_REG_T6,   ///< Temporary register (GPR)
 	/* Virtual registers */
-	S3K_REG_CAUSE,	///< Exception cause code.
-	S3K_REG_TVAL,	///< Exception value.
-	S3K_REG_EPC,	///< Exception program counter.
-	S3K_REG_TVEC,	///< Exception handling vector.
-	S3K_REG_PMP,	///< PMP configuration.
-	S3K_REG_COUNT	///< *Number of S3K registers.*
+	/* Trap handling setup */
+	S3K_REG_TPC,  ///< Trap program counter.
+	S3K_REG_TSP,  ///< Trap stack pointer.
+	/* Exception handling registers */
+	S3K_REG_EPC,	 ///< Exception program counter.
+	S3K_REG_ESP,	 ///< Exception stack pointer.
+	S3K_REG_ECAUSE,	 ///< Exception cause code.
+	S3K_REG_EVAL,	 ///< Exception value.
+	/* PMP registers */
+	S3K_REG_PMP,  ///< PMP configuration.
+	/* End of registers */
+	S3K_REG_COUNT  ///< *Number of S3K registers.*
 };
+
+/// @defgroup cap-def S3K Capability Definitions
+/// @{
 
 /// Time slice capability
 struct s3k_time {
@@ -181,6 +190,8 @@ union s3k_cap {
 };
 
 _Static_assert(sizeof(union s3k_cap) == 8, "sizeof(union s3k_cap) != 8");
+
+/// @}
 
 /**
  * @defgroup api-syscall System Calls
@@ -382,6 +393,11 @@ enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst
 /**************************** API UTILITY *********************************/
 
 /**
+ * @defgroup api-pmp PMP helper functions
+ * @{
+ */
+
+/**
  * @brief Returns a PMP NAPOT representation of the address range.
  * @param begin Start of the range
  * @param end End of the range
@@ -402,6 +418,13 @@ uint64_t pmp_napot_begin(uint64_t addr);
  * @return The end of the address range.
  */
 uint64_t pmp_napot_end(uint64_t addr);
+
+/// @}
+
+/**
+ * @defgroup api-cap-constr S3K Capability constructors.
+ * @{
+ */
 
 /**
  * @brief Create a time slice capability
@@ -448,6 +471,13 @@ union s3k_cap s3k_monitor(uint64_t begin, uint64_t end);
 union s3k_cap s3k_channel(uint64_t begin, uint64_t end);
 /// Create a socket capability
 union s3k_cap s3k_socket(uint64_t port, uint64_t tag);
+
+/// @}
+
+/**
+ * @defgroup api-cap-help S3K Capability helper functions.
+ * @{
+ */
 /// Check if a time slice can derive the child.
 bool s3k_time_derive(union s3k_cap parent, union s3k_cap child);
 /// Check if a memory slice can derive the child.
@@ -473,6 +503,7 @@ bool s3k_socket_parent(union s3k_cap parent, union s3k_cap child);
 /// Check if capability is a parent
 bool s3k_is_parent(union s3k_cap parent, union s3k_cap child);
 
+/// @}
 /// @}
 
 #endif /* _S3K_H_ */
