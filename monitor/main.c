@@ -50,9 +50,9 @@ void setup_uart(void)
 	s3k_msetreg(CAP_MON, UART_PID, S3K_REG_PMP, 0x020100);
 
 	// Derive memory for uart
-	uint64_t uartaddr = pmp_napot_addr(0x10000000, 0x10001000);
-	uint64_t mainaddr = pmp_napot_addr((uint64_t)uart_mem, (uint64_t)uart_mem + MEMSIZE);
-	uint64_t bufferaddr = pmp_napot_addr((uint64_t)uart_buf, (uint64_t)uart_buf + 64);
+	uint64_t uartaddr = s3k_pmp_napot_addr(0x10000000, 0x10001000);
+	uint64_t mainaddr = s3k_pmp_napot_addr((uint64_t)uart_mem, (uint64_t)uart_mem + MEMSIZE);
+	uint64_t bufferaddr = s3k_pmp_napot_addr((uint64_t)uart_buf, (uint64_t)uart_buf + 64);
 	union s3k_cap uartcap = s3k_pmp(uartaddr, S3K_RW);
 	union s3k_cap maincap = s3k_pmp(mainaddr, S3K_RWX);
 	union s3k_cap buffercap = s3k_pmp(bufferaddr, S3K_RW);
@@ -108,7 +108,7 @@ void setup_uart(void)
 void setup_monitor(void)
 {
 	// Caps for monitor
-	uint64_t bufferaddr = pmp_napot_addr((uint64_t)uart_buf, (uint64_t)uart_buf + 64);
+	uint64_t bufferaddr = s3k_pmp_napot_addr((uint64_t)uart_buf, (uint64_t)uart_buf + 64);
 	union s3k_cap buffercap = s3k_pmp(bufferaddr, S3K_RW);
 	while (s3k_drvcap(CAP_MEM_MAIN, 10, buffercap))
 		;
@@ -164,6 +164,7 @@ void loop(void)
 	case 0x15: /* Copy data from uart to app1 */
 		break;
 	default:
+		break;
 	}
 	s3k_yield();
 }

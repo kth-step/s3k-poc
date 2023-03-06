@@ -1,10 +1,6 @@
 // See LICENSE file for copyright and license details.
 #pragma once
 
-//
-#define PAYLOAD 0x80010000
-#define NHART	4
-
 /* Number of processes. */
 #define NPROC 8
 
