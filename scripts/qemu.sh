@@ -25,8 +25,8 @@ function cleanup() {
 trap cleanup EXIT
 
 qemu-system-riscv64 -M virt -smp 1 -m 8G -nographic -bios none -kernel $KERNEL \
-        -device loader,file=$TMPBIN,addr=0x80010000 -s -S                      \
-        -serial tcp:localhost:4321,server,nowait &
+        -device loader,file=$TMPBIN,addr=0x80010000 -s -S &
+#        -serial tcp:localhost:4321,server,nowait &
 
 st -e                                                   \
 riscv64-unknown-elf-gdb                                 \

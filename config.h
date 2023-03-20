@@ -12,7 +12,8 @@
 
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
-#define NTICK 100000
+#define TICKS_PER_SECOND 1000000ull
+#define NTICK (TICKS_PER_SECOND/10ull)
 
 /* Number of scheduler ticks. */
 #define NSLACK 10000

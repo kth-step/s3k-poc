@@ -5,11 +5,11 @@ export CC=${RISCV_PREFIX}gcc
 export OBJCOPY=${RISCV_PREFIX}objcopy
 export OBJDUMP=${RISCV_PREFIX}objdump
 
-MONITOR=monitor/monitor.elf
+BOOT=boot/boot.elf
 KERNEL=../s3k/s3k.elf
 CONFIG_H=${abspath config.h}
 
-all: ${MONITOR} ${KERNEL}
+all: ${BOOT} ${KERNEL}
 
 clean:
 	git clean -fdX
@@ -26,7 +26,7 @@ common/s3k-syscall.c: ../s3k/api/s3k-syscall.c
 
 api: common/s3k.h common/s3k-utils.c common/s3k-syscall.c
 
-${MONITOR}: api
+${BOOT}: api
 	${MAKE} -C ${@D} ${@F}
 
 ${KERNEL}:
@@ -38,7 +38,7 @@ ${KERNEL}:
 %.da: %.elf
 	${OBJDUMP} -d $< > $@
 
-qemu: $(KERNEL) $(MONITOR)
-	./scripts/qemu.sh $(KERNEL) $(MONITOR)
+qemu: $(KERNEL) $(BOOT)
+	./scripts/qemu.sh $(KERNEL) $(BOOT)
 
 .PHONY: all api clean qemu ${MONITOR} ${KERNEL}
