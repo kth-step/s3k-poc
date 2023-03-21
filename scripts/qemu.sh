@@ -32,6 +32,7 @@ st -e                                                   \
 riscv64-unknown-elf-gdb                                 \
         -ex "set confirm off"                           \
         -ex "set pagination off"                        \
+	-ex "set output-radix 16"			\
         -ex "symbol-file $KERNEL"                       \
         -ex "add-symbol-file $PAYLOAD"    \
         -ex "j 0x80000000"                              \

@@ -10,6 +10,7 @@ export OBJCOPY=${RISCV_PREFIX}objcopy
 export OBJDUMP=${RISCV_PREFIX}objdump
 
 CFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
+       -static-pie \
 	-std=c11\
 	-Wall -Werror\
 	-g -Os\

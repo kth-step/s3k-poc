@@ -1,5 +1,3 @@
-#include "uart.h"
-
 void setup(void)
 {
 }
