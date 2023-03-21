@@ -24,8 +24,8 @@ ASFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
 LDFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
 	-nostdlib -static-pie -mno-relax\
 	-Wl,--gc-sections,--no-dynamic-linker\
-	-Wl,--no-warn-rwx-segments\
 	-flto
+#	-Wl,--no-warn-rwx-segments\
 #	-Wstack-usage=2048 -fstack-usage\
 
 # Build all
