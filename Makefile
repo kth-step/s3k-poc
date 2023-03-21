@@ -3,7 +3,7 @@
 BUILD?=build
 S3K_PATH?=../s3k
 CONFIG_H?=config.h
-RISCV_PREFIX ?=riscv64-unknown-elf-
+export RISCV_PREFIX ?=riscv64-unknown-elf-
 
 export CC=${RISCV_PREFIX}gcc
 export OBJCOPY=${RISCV_PREFIX}objcopy
@@ -16,7 +16,7 @@ CFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
 	-g -Os\
 	-flto\
 	-ffreestanding\
-	-Icommon
+	-Iinc
 
 ASFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
 	-g
@@ -46,17 +46,10 @@ clean:
 	${MAKE} -C ${S3K_PATH} clean
 
 # API
-# TODO: Make static archive file (s3k.a)
-common/s3k.h: ../s3k/api/s3k.h
-	cp $< $@
-
-common/s3k-utils.c: ../s3k/api/s3k-utils.c
-	cp $< $@
-
-common/s3k-syscall.c: ../s3k/api/s3k-syscall.c
-	cp $< $@
-
-api: common/s3k.h common/s3k-utils.c common/s3k-syscall.c
+api:
+	$(MAKE) -C $(S3K_PATH)/api libs3k.a
+	cp $(S3K_PATH)/api/s3k.h inc/s3k.h
+	cp $(S3K_PATH)/api/libs3k.a lib/libs3k.a
 
 $(BUILD)/%.c.o: %.c
 	@mkdir -p ${@D}
@@ -69,34 +62,34 @@ $(BUILD)/%.S.o: %.S
 	@$(CC) $(ASFLAGS) -MMD -c -o $@ $<
 
 # Boot loader
-SRCS=boot/main.c boot/capman.c boot/payload.S common/s3k-syscall.c common/s3k-utils.c common/start.S
+SRCS=boot/main.c boot/capman.c boot/payload.S common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 build/boot/payload.S.o: build/uart.bin build/app0.bin build/app1.bin
-$(BUILD)/boot.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS))
+$(BUILD)/boot.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
 	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
 
 # UART driver
-SRCS=uart/main.c uart/ppp.c common/s3k-syscall.c common/s3k-utils.c common/start.S
+SRCS=uart/main.c uart/ppp.c common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
-$(BUILD)/uart.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS))
+$(BUILD)/uart.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
 	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
 
 # Application 0
-SRCS=app0/main.c common/s3k-syscall.c common/s3k-utils.c common/start.S
+SRCS=app0/main.c common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
-$(BUILD)/app0.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS))
+$(BUILD)/app0.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
 	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
 
 # Application 1
-SRCS=app1/main.c common/s3k-syscall.c common/s3k-utils.c common/start.S
+SRCS=app1/main.c common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
-$(BUILD)/app1.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS))
+$(BUILD)/app1.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
 	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
