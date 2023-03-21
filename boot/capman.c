@@ -42,40 +42,60 @@ void capman_update(void)
 	}
 }
 
+static void _dump_time(struct s3k_time time)
+{
+	alt_printf("time{begin=0x%X,end=0x%X,free=0x%X}\n", time.begin, time.end, time.free);
+}
+
+static void _dump_memory(struct s3k_memory mem)
+{
+	alt_printf(
+	    "memory{begin=0x%X,end=0x%X,free=0x%x,offset=0x%X,lock=0x%X,rwx=0x%X}"
+	    "\n",
+	    mem.begin, mem.end, mem.free, mem.offset, mem.lock, mem.rwx);
+}
+
+static void _dump_pmp(struct s3k_pmp pmp)
+{
+	alt_printf("pmp{addr=0x%X,cfg=0x%X}\n", pmp.addr, pmp.cfg);
+}
+
+static void _dump_monitor(struct s3k_monitor mon)
+{
+	alt_printf("monitor{begin=0x%X,end=0x%X,free=0x%X}\n", mon.begin, mon.end, mon.free);
+}
+
+static void _dump_channel(struct s3k_channel chan)
+{
+	alt_printf("channel{begin=0x%X,end=0x%X,free=0x%X}\n", chan.begin, chan.end, chan.free);
+}
+
 void capman_dump(void)
 {
 	for (int i = 0; i < NCAP; i++) {
+		if (caps[i].raw == 0)
+			continue;
+		alt_printf("0x%x: ", i);
 		switch (caps[i].type) {
 		case S3K_CAPTY_NONE:
 			break;
 		case S3K_CAPTY_TIME:
-			alt_printf("0x%x: time{begin=0x%X,end=0x%X,free=0x%X}\n", i,
-				   caps[i].time.begin, caps[i].time.end, caps[i].time.free);
+			_dump_time(caps[i].time);
 			break;
 		case S3K_CAPTY_MEMORY:
-			alt_printf(
-			    "0x%x: "
-			    "memory{begin=0x%X,end=0x%X,free=0x%x,offset=0x%X,lock=0x%X,rwx=0x%X}"
-			    "\n",
-			    i, caps[i].memory.begin, caps[i].memory.end, caps[i].memory.free,
-			    caps[i].memory.offset, caps[i].memory.lock, caps[i].memory.rwx);
+			_dump_memory(caps[i].memory);
 			break;
 		case S3K_CAPTY_PMP:
-			alt_printf("0x%x: pmp{addr=0x%X,cfg=0x%X}\n", i, caps[i].pmp.addr,
-				   caps[i].pmp.cfg);
+			_dump_pmp(caps[i].pmp);
 			break;
 		case S3K_CAPTY_MONITOR:
-			alt_printf("0x%x: monitor{begin=0x%X,end=0x%X,free=0x%X}\n", i,
-				   caps[i].monitor.begin, caps[i].monitor.end,
-				   caps[i].monitor.free);
+			_dump_monitor(caps[i].monitor);
 			break;
 		case S3K_CAPTY_CHANNEL:
-			alt_printf("0x%x: channel{begin=0x%X,end=0x%X,free=0x%X}\n", i,
-				   caps[i].channel.begin, caps[i].channel.end,
-				   caps[i].channel.free);
+			_dump_channel(caps[i].channel);
 			break;
 		default:
-			alt_printf("0x%x: 0x%X\n", i, caps[i].raw);
+			alt_printf("0x%X\n", caps[i].raw);
 			break;
 		}
 	}
