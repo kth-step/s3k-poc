@@ -58,6 +58,11 @@ static inline int alt_printf(const char *fmt, ...)
 			break;
 		case 'x':
 			x = va_arg(args, unsigned int);
+			if (!x) {
+				alt_putchar('0');
+				len++;
+				break;
+			}
 			for (int i = 28; i >= 0; i -= 4) {
 				if (x >> i) {
 					alt_putchar(hex[(x >> i) & 0xF]);
@@ -67,6 +72,11 @@ static inline int alt_printf(const char *fmt, ...)
 			break;
 		case 'X':
 			x = va_arg(args, unsigned long long);
+			if (!x) {
+				alt_putchar('0');
+				len++;
+				break;
+			}
 			for (int i = 60; i >= 0; i -= 4) {
 				if (x >> i) {
 					alt_putchar(hex[(x >> i) & 0xF]);

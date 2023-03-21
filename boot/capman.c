@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "../config.h"
+#include "altio.h"
 #include "s3k.h"
 
 static uint64_t ncaps;
@@ -14,6 +15,23 @@ void capman_init(void)
 	capman_update();
 }
 
+union s3k_cap capman_get(uint64_t idx)
+{
+	return caps[idx];
+}
+
+bool capman_move(uint64_t src, uint64_t dst)
+{
+	if (caps[src].raw == 0 || caps[dst].raw != 0)
+		return false;
+	if (s3k_movcap(src, dst) != S3K_EXCPT_NONE) {
+		caps[dst].raw = caps[src].raw;
+		caps[src].raw = 0;
+		return true;
+	}
+	return false;
+}
+
 void capman_update(void)
 {
 	ncaps = 0;
@@ -21,6 +39,45 @@ void capman_update(void)
 		caps[i] = s3k_getcap(i);
 		if (caps[i].type != S3K_CAPTY_NONE)
 			ncaps++;
+	}
+}
+
+void capman_dump(void)
+{
+	for (int i = 0; i < NCAP; i++) {
+		switch (caps[i].type) {
+		case S3K_CAPTY_NONE:
+			break;
+		case S3K_CAPTY_TIME:
+			alt_printf("0x%x: time{begin=0x%X,end=0x%X,free=0x%X}\n", i,
+				   caps[i].time.begin, caps[i].time.end, caps[i].time.free);
+			break;
+		case S3K_CAPTY_MEMORY:
+			alt_printf(
+			    "0x%x: "
+			    "memory{begin=0x%X,end=0x%X,free=0x%x,offset=0x%X,lock=0x%X,rwx=0x%X}"
+			    "\n",
+			    i, caps[i].memory.begin, caps[i].memory.end, caps[i].memory.free,
+			    caps[i].memory.offset, caps[i].memory.lock, caps[i].memory.rwx);
+			break;
+		case S3K_CAPTY_PMP:
+			alt_printf("0x%x: pmp{addr=0x%X,cfg=0x%X}\n", i, caps[i].pmp.addr,
+				   caps[i].pmp.cfg);
+			break;
+		case S3K_CAPTY_MONITOR:
+			alt_printf("0x%x: monitor{begin=0x%X,end=0x%X,free=0x%X}\n", i,
+				   caps[i].monitor.begin, caps[i].monitor.end,
+				   caps[i].monitor.free);
+			break;
+		case S3K_CAPTY_CHANNEL:
+			alt_printf("0x%x: channel{begin=0x%X,end=0x%X,free=0x%X}\n", i,
+				   caps[i].channel.begin, caps[i].channel.end,
+				   caps[i].channel.free);
+			break;
+		default:
+			alt_printf("0x%x: 0x%X\n", i, caps[i].raw);
+			break;
+		}
 	}
 }
 

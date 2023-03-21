@@ -45,6 +45,7 @@ void setup(void)
 	capman_derive_mem(APP0_BEGIN, APP0_END, S3K_RWX);
 	capman_derive_mem(APP1_BEGIN, APP1_END, S3K_RWX);
 	alt_puts("BOOT: Setup complete.");
+	capman_dump();
 }
 
 void loop(void)
