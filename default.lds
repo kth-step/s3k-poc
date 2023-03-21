@@ -3,14 +3,14 @@ OUTPUT_ARCH("riscv")
 ENTRY(_start)
 
 SECTIONS {
-        .text : {
+        .text : ALIGN(4K) {
                 _text = .;
                 *(.init)
                 *(.text .text.*)
                 _etext = .;
         }
 
-        .data : {
+        .data : ALIGN(8) {
                 _data = .;
                 *(.data .data.*)
                 *(.rodata .rodata.*)
@@ -29,12 +29,6 @@ SECTIONS {
 
 	.stack : ALIGN(8) {
 		*(.stack .stack.*)
-	}
-
-	.noinit : {
-		_noinit = .;
-                *(.noinit .noinit.*)
-                _enoinit = .;
 	}
 	_end = .;
 

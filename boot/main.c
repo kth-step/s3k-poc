@@ -16,14 +16,22 @@
 #define APP0_PID    4
 #define APP1_PID    5
 
-uint8_t pmpcaps[8];
+uint8_t pmpcaps[8] = {0};
+
+void init_uart(void)
+{
+	pmpcaps[1] = capman_derive_pmp((uint64_t)UART, (uint64_t)UART + 0x8, S3K_RW);
+	// Set pmp configuration
+	capman_setpmp(pmpcaps);
+}
 
 void setup(void)
 {
+	// Initialize capman
 	capman_init();
-	capman_getpmp(pmpcaps);
-	pmpcaps[1] = capman_derive_pmp((uint64_t)UART, (uint64_t)UART + 0x1000, S3K_RW);
-	capman_setpmp(pmpcaps);
+	init_uart();
+
+	// We can now print stuff
 	uart_puts("BOOT: Setting up.");
 
 	capman_derive_mem(MONITOR_BEGIN, MONITOR_END, S3K_RWX);
@@ -36,6 +44,10 @@ void setup(void)
 
 void loop(void)
 {
-	uart_putchar('.');
+	static int i = 0;
+	char c[2] = "0";
+	c[0] += i;
+	i = (i + 1) % 10;
+	uart_puts(c);
 	s3k_yield();
 }
