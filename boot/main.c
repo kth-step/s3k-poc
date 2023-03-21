@@ -1,14 +1,14 @@
 #include <stdbool.h>
 #include <string.h>
-#include "base.h"
 
+#include "../config.h"
+#include "altio.h"
+#include "base.h"
 #include "capman.h"
 #include "payload.h"
-#include "altio.h"
 #include "s3k.h"
-#include "../config.h"
 
-#define BOOT_PID 0
+#define BOOT_PID    0
 #define MONITOR_PID 1
 #define UART_PID    2
 #define CRYPTO_PID  3
@@ -33,7 +33,7 @@ void setup(void)
 	// We can now print stuff
 	alt_puts("BOOT: Setting up.");
 
-	alt_printf("testing: hello world\n"); 
+	alt_printf("testing: hello world\n");
 	alt_printf("testing char: %c\n", 'c');
 	alt_printf("testing string: %s\n", "hello world");
 	alt_printf("testing hex: %x\n", 0xDEADBEEF);

@@ -1,9 +1,10 @@
+#include "capman.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "../config.h"
 #include "s3k.h"
-#include "capman.h"
 
 static uint64_t ncaps;
 static union s3k_cap caps[NCAP];
@@ -41,7 +42,7 @@ static int find_memory_derive(union s3k_cap cap)
 	return -1;
 }
 
-void capman_setpmp(uint8_t pmp[8]) 
+void capman_setpmp(uint8_t pmp[8])
 {
 	uint64_t pmpreg = 0;
 	for (int i = 0; i < 8; ++i) {
@@ -50,7 +51,7 @@ void capman_setpmp(uint8_t pmp[8])
 	s3k_setreg(S3K_REG_PMP, pmpreg);
 }
 
-void capman_getpmp(uint8_t pmp[8]) 
+void capman_getpmp(uint8_t pmp[8])
 {
 	uint64_t pmpreg = s3k_getreg(S3K_REG_PMP);
 	for (int i = 0; i < 8; ++i) {
@@ -62,8 +63,7 @@ int capman_derive_pmp(uint64_t begin, uint64_t end, uint64_t rwx)
 {
 	uint64_t addr = s3k_pmp_napot_addr(begin, end);
 	union s3k_cap pmp = s3k_pmp(addr, rwx);
-	if (begin != s3k_pmp_napot_begin(addr) ||
-			end != s3k_pmp_napot_end(addr))
+	if (begin != s3k_pmp_napot_begin(addr) || end != s3k_pmp_napot_end(addr))
 		return -1;
 
 	uint64_t i = find_memory_derive(pmp);

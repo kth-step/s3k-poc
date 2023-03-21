@@ -19,11 +19,10 @@
 ///
 /// @{
 
-#define S3K_RWX 0x7 ///< Read, write and execute for Memory and PMP capability
-#define S3K_RW 0x3 ///< Read and write permissions for memory and PMP capability
-#define S3K_RX \
-	0x5 ///< Read and execute permissions for memory and PMP capability
-#define S3K_R 0x1 ///< Read permissions for memory and PMP capability
+#define S3K_RWX 0x7  ///< Read, write and execute for Memory and PMP capability
+#define S3K_RW	0x3  ///< Read and write permissions for memory and PMP capability
+#define S3K_RX	0x5  ///< Read and execute permissions for memory and PMP capability
+#define S3K_R	0x1  ///< Read permissions for memory and PMP capability
 
 /**
  * @brief Enumeration S3K system call exception codes.
@@ -33,16 +32,16 @@
  * returned.
  */
 enum s3k_excpt {
-	S3K_EXCPT_NONE,		///< No exception.
-	S3K_EXCPT_EMPTY,	///< Capability slot is empty.
-	S3K_EXCPT_COLLISION,	///< Capability slot is occupied.
-	S3K_EXCPT_DERIVATION,	///< Capability can not be derived.
-	S3K_EXCPT_PREEMPTED,	///< System call was preempted.
-	S3K_EXCPT_SUSPENDED,	///< Process was suspended
-	S3K_EXCPT_MPID,		///< Bad PID for monitor operation.
-	S3K_EXCPT_MBUSY,	///< Process busy.
-	S3K_EXCPT_UNIMPLEMENTED ///< System call not implemented for specified
-				///< capability.
+	S3K_EXCPT_NONE,		 ///< No exception.
+	S3K_EXCPT_EMPTY,	 ///< Capability slot is empty.
+	S3K_EXCPT_COLLISION,	 ///< Capability slot is occupied.
+	S3K_EXCPT_DERIVATION,	 ///< Capability can not be derived.
+	S3K_EXCPT_PREEMPTED,	 ///< System call was preempted.
+	S3K_EXCPT_SUSPENDED,	 ///< Process was suspended
+	S3K_EXCPT_MPID,		 ///< Bad PID for monitor operation.
+	S3K_EXCPT_MBUSY,	 ///< Process busy.
+	S3K_EXCPT_UNIMPLEMENTED	 ///< System call not implemented for specified
+				 ///< capability.
 };
 
 /// @brief Enumeration of capability types.
@@ -82,51 +81,51 @@ enum s3k_capty {
  */
 enum s3k_reg {
 	/* General purpose registers */
-	S3K_REG_PC,  ///< Program counter
-	S3K_REG_RA,  ///< Return address (GPR)
-	S3K_REG_SP,  ///< Stack pointer (GPR)
-	S3K_REG_GP,  ///< Global pointer (GPR)
-	S3K_REG_TP,  ///< Thread pointer (GPR)
-	S3K_REG_T0,  ///< Temporary register (GPR)
-	S3K_REG_T1,  ///< Temporary register (GPR)
-	S3K_REG_T2,  ///< Temporary register (GPR)
-	S3K_REG_S0,  ///< Saved register/Stack frame pointer (GPR)
-	S3K_REG_S1,  ///< Saved register (GPR)
-	S3K_REG_A0,  ///< Argument/Return register (GPR)
-	S3K_REG_A1,  ///< Argument/Return register (GPR)
-	S3K_REG_A2,  ///< Argument register (GPR)
-	S3K_REG_A3,  ///< Argument register (GPR)
-	S3K_REG_A4,  ///< Argument register (GPR)
-	S3K_REG_A5,  ///< Argument register (GPR)
-	S3K_REG_A6,  ///< Argument register (GPR)
-	S3K_REG_A7,  ///< Argument register (GPR)
-	S3K_REG_S2,  ///< Saved register (GPR)
-	S3K_REG_S3,  ///< Saved register (GPR)
-	S3K_REG_S4,  ///< Saved register (GPR)
-	S3K_REG_S5,  ///< Saved register (GPR)
-	S3K_REG_S6,  ///< Saved register (GPR)
-	S3K_REG_S7,  ///< Saved register (GPR)
-	S3K_REG_S8,  ///< Saved register (GPR)
-	S3K_REG_S9,  ///< Saved register (GPR)
-	S3K_REG_S10, ///< Saved register (GPR)
-	S3K_REG_S11, ///< Saved register (GPR)
-	S3K_REG_T3,  ///< Temporary register (GPR)
-	S3K_REG_T4,  ///< Temporary register (GPR)
-	S3K_REG_T5,  ///< Temporary register (GPR)
-	S3K_REG_T6,  ///< Temporary register (GPR)
+	S3K_REG_PC,   ///< Program counter
+	S3K_REG_RA,   ///< Return address (GPR)
+	S3K_REG_SP,   ///< Stack pointer (GPR)
+	S3K_REG_GP,   ///< Global pointer (GPR)
+	S3K_REG_TP,   ///< Thread pointer (GPR)
+	S3K_REG_T0,   ///< Temporary register (GPR)
+	S3K_REG_T1,   ///< Temporary register (GPR)
+	S3K_REG_T2,   ///< Temporary register (GPR)
+	S3K_REG_S0,   ///< Saved register/Stack frame pointer (GPR)
+	S3K_REG_S1,   ///< Saved register (GPR)
+	S3K_REG_A0,   ///< Argument/Return register (GPR)
+	S3K_REG_A1,   ///< Argument/Return register (GPR)
+	S3K_REG_A2,   ///< Argument register (GPR)
+	S3K_REG_A3,   ///< Argument register (GPR)
+	S3K_REG_A4,   ///< Argument register (GPR)
+	S3K_REG_A5,   ///< Argument register (GPR)
+	S3K_REG_A6,   ///< Argument register (GPR)
+	S3K_REG_A7,   ///< Argument register (GPR)
+	S3K_REG_S2,   ///< Saved register (GPR)
+	S3K_REG_S3,   ///< Saved register (GPR)
+	S3K_REG_S4,   ///< Saved register (GPR)
+	S3K_REG_S5,   ///< Saved register (GPR)
+	S3K_REG_S6,   ///< Saved register (GPR)
+	S3K_REG_S7,   ///< Saved register (GPR)
+	S3K_REG_S8,   ///< Saved register (GPR)
+	S3K_REG_S9,   ///< Saved register (GPR)
+	S3K_REG_S10,  ///< Saved register (GPR)
+	S3K_REG_S11,  ///< Saved register (GPR)
+	S3K_REG_T3,   ///< Temporary register (GPR)
+	S3K_REG_T4,   ///< Temporary register (GPR)
+	S3K_REG_T5,   ///< Temporary register (GPR)
+	S3K_REG_T6,   ///< Temporary register (GPR)
 	/* Virtual registers */
 	/* Trap handling setup */
-	S3K_REG_TPC, ///< Trap program counter.
-	S3K_REG_TSP, ///< Trap stack pointer.
+	S3K_REG_TPC,  ///< Trap program counter.
+	S3K_REG_TSP,  ///< Trap stack pointer.
 	/* Exception handling registers */
-	S3K_REG_EPC,	///< Exception program counter.
-	S3K_REG_ESP,	///< Exception stack pointer.
-	S3K_REG_ECAUSE, ///< Exception cause code.
-	S3K_REG_EVAL,	///< Exception value.
+	S3K_REG_EPC,	 ///< Exception program counter.
+	S3K_REG_ESP,	 ///< Exception stack pointer.
+	S3K_REG_ECAUSE,	 ///< Exception cause code.
+	S3K_REG_EVAL,	 ///< Exception value.
 	/* PMP registers */
-	S3K_REG_PMP, ///< PMP configuration.
+	S3K_REG_PMP,  ///< PMP configuration.
 	/* End of registers */
-	S3K_REG_COUNT ///< *Number of S3K registers.*
+	S3K_REG_COUNT  ///< *Number of S3K registers.*
 };
 
 /// @defgroup cap-def S3K Capability Definitions
@@ -134,39 +133,39 @@ enum s3k_reg {
 
 /// Time slice capability
 struct s3k_time {
-	uint64_t type : 4;   ///< Type of capability, should be S3K_CAPTY_TIME.
-	uint64_t _padd : 4;  ///< Padding, should be zero.
-	uint64_t hartid : 8; ///< Hardware Thread ID.
-	uint64_t begin : 16; ///< Beginning of time slice.
-	uint64_t free : 16;  ///< Beginning of available/unallocated time slice.
-	uint64_t end : 16;   ///< End of time slice.
+	uint64_t type : 4;    ///< Type of capability, should be S3K_CAPTY_TIME.
+	uint64_t _padd : 4;   ///< Padding, should be zero.
+	uint64_t hartid : 8;  ///< Hardware Thread ID.
+	uint64_t begin : 16;  ///< Beginning of time slice.
+	uint64_t free : 16;   ///< Beginning of available/unallocated time slice.
+	uint64_t end : 16;    ///< End of time slice.
 };
 
 /// Memory Slice capability
 struct s3k_memory {
-	uint64_t type : 4;   ///< Type of capability, should be S3K_CAPTY_MEMORY
-	uint64_t lock : 1;   ///< Prevents creating of memory capabilities
-	uint64_t rwx : 3;    ///< Read, write and execute (reverse order)
-	uint64_t offset : 8; ///< 128 MiB offset of memory slice
-	uint64_t begin : 16; ///< Beginning of memory slice
-	uint64_t free : 16; ///< Beginning of available/unallocated memory slice
-	uint64_t end : 16;  ///< End of memory slice
+	uint64_t type : 4;    ///< Type of capability, should be S3K_CAPTY_MEMORY
+	uint64_t lock : 1;    ///< Prevents creating of memory capabilities
+	uint64_t rwx : 3;     ///< Read, write and execute (reverse order)
+	uint64_t offset : 8;  ///< 128 MiB offset of memory slice
+	uint64_t begin : 16;  ///< Beginning of memory slice
+	uint64_t free : 16;   ///< Beginning of available/unallocated memory slice
+	uint64_t end : 16;    ///< End of memory slice
 };
 
 /// PMP Frame capability
 struct s3k_pmp {
-	uint64_t type : 4;  ///< Type of capability, should be S3K_CAPTY_PMP
-	uint64_t addr : 52; ///< pmpaddr
-	uint64_t cfg : 8;   ///< pmpcfg
+	uint64_t type : 4;   ///< Type of capability, should be S3K_CAPTY_PMP
+	uint64_t addr : 52;  ///< pmpaddr
+	uint64_t cfg : 8;    ///< pmpcfg
 };
 
 /// Monitor capability
 struct s3k_monitor {
-	uint64_t type : 4; ///< Type of capability, should be S3K_CAPTY_MONITOR
-	uint64_t _padd : 12; ///< Padding, should be zero
-	uint64_t begin : 16; ///< Beginning of monitored PIDs.
-	uint64_t free : 16;  ///< Beginning of available monitored PIDs.
-	uint64_t end : 16;   ///< End of monitred PIDs
+	uint64_t type : 4;    ///< Type of capability, should be S3K_CAPTY_MONITOR
+	uint64_t _padd : 12;  ///< Padding, should be zero
+	uint64_t begin : 16;  ///< Beginning of monitored PIDs.
+	uint64_t free : 16;   ///< Beginning of available monitored PIDs.
+	uint64_t end : 16;    ///< End of monitred PIDs
 };
 
 /// Channel capability
@@ -188,14 +187,14 @@ struct s3k_socket {
 
 /// Capability description
 union s3k_cap {
-	uint64_t type : 4;	    ///< Type of capability
-	uint64_t raw;		    ///< Capability as 64-bit word
-	struct s3k_time time;	    ///< As time slice capability
-	struct s3k_memory memory;   ///< As memory slice capability
-	struct s3k_pmp pmp;	    ///< As PMP frame capability
-	struct s3k_monitor monitor; ///< As monitor slice capability
-	struct s3k_channel channel; ///< As channel slice capability
-	struct s3k_socket socket;   ///< As socket capability
+	uint64_t type : 4;	     ///< Type of capability
+	uint64_t raw;		     ///< Capability as 64-bit word
+	struct s3k_time time;	     ///< As time slice capability
+	struct s3k_memory memory;    ///< As memory slice capability
+	struct s3k_pmp pmp;	     ///< As PMP frame capability
+	struct s3k_monitor monitor;  ///< As monitor slice capability
+	struct s3k_channel channel;  ///< As channel slice capability
+	struct s3k_socket socket;    ///< As socket capability
 };
 
 #ifdef _Static_assert
@@ -215,28 +214,28 @@ _Static_assert(sizeof(union s3k_cap) == 8, "sizeof(union s3k_cap) != 8");
 /// S3K Syscall Numbers
 enum s3k_syscall_nr {
 	// Capabilityless syscalls
-	S3K_SYSCALL_GETINFO, ///< Get information about current execution.
-	S3K_SYSCALL_GETREG,  ///< Get register value
-	S3K_SYSCALL_SETREG,  ///< Set register value
-	S3K_SYSCALL_YIELD,   ///< Yield remaining time slice
+	S3K_SYSCALL_GETINFO,  ///< Get information about current execution.
+	S3K_SYSCALL_GETREG,   ///< Get register value
+	S3K_SYSCALL_SETREG,   ///< Set register value
+	S3K_SYSCALL_YIELD,    ///< Yield remaining time slice
 	// Capability syscalls
-	S3K_SYSCALL_GETCAP, ///< Get capability description
-	S3K_SYSCALL_MOVCAP, ///< Move capability
-	S3K_SYSCALL_DELCAP, ///< Delete capability
-	S3K_SYSCALL_REVCAP, ///< Revoke capability
-	S3K_SYSCALL_DRVCAP, ///< Derive capability
+	S3K_SYSCALL_GETCAP,  ///< Get capability description
+	S3K_SYSCALL_MOVCAP,  ///< Move capability
+	S3K_SYSCALL_DELCAP,  ///< Delete capability
+	S3K_SYSCALL_REVCAP,  ///< Revoke capability
+	S3K_SYSCALL_DRVCAP,  ///< Derive capability
 	// Monitor syscalls
-	S3K_SYSCALL_MSUSPEND, ///< Monitor suspend process
-	S3K_SYSCALL_MRESUME,  ///< Monitor resume process
-	S3K_SYSCALL_MGETREG,  ///< Monitor get register value
-	S3K_SYSCALL_MSETREG,  ///< Monitor set register value
-	S3K_SYSCALL_MGETCAP,  ///< Monitor get capability description
-	S3K_SYSCALL_MTAKECAP, ///< Monitor take capability
-	S3K_SYSCALL_MGIVECAP, ///< Monitor give capability
+	S3K_SYSCALL_MSUSPEND,  ///< Monitor suspend process
+	S3K_SYSCALL_MRESUME,   ///< Monitor resume process
+	S3K_SYSCALL_MGETREG,   ///< Monitor get register value
+	S3K_SYSCALL_MSETREG,   ///< Monitor set register value
+	S3K_SYSCALL_MGETCAP,   ///< Monitor get capability description
+	S3K_SYSCALL_MTAKECAP,  ///< Monitor take capability
+	S3K_SYSCALL_MGIVECAP,  ///< Monitor give capability
 	// IPC syscalls
-	S3K_SYSCALL_RECV,     ///< Receive message/capability
-	S3K_SYSCALL_SEND,     ///< Send message/capability
-	S3K_SYSCALL_SENDRECV, ///< Send then receive message/capability
+	S3K_SYSCALL_RECV,      ///< Receive message/capability
+	S3K_SYSCALL_SEND,      ///< Send message/capability
+	S3K_SYSCALL_SENDRECV,  ///< Send then receive message/capability
 };
 
 /**
@@ -376,8 +375,7 @@ enum s3k_excpt s3k_mresume(uint64_t i, uint64_t pid);
  * @param val Read value
  * @return TODO
  */
-enum s3k_excpt s3k_mgetreg(uint64_t i, uint64_t pid, enum s3k_reg reg,
-			   uint64_t *val);
+enum s3k_excpt s3k_mgetreg(uint64_t i, uint64_t pid, enum s3k_reg reg, uint64_t *val);
 /**
  * @brief Monitor write a process's register.
  *
@@ -387,8 +385,7 @@ enum s3k_excpt s3k_mgetreg(uint64_t i, uint64_t pid, enum s3k_reg reg,
  * @param val Value to write
  * @return TODO
  */
-enum s3k_excpt s3k_msetreg(uint64_t i, uint64_t pid, enum s3k_reg reg,
-			   uint64_t val);
+enum s3k_excpt s3k_msetreg(uint64_t i, uint64_t pid, enum s3k_reg reg, uint64_t val);
 /**
  * @brief Monitor read process's capability.
  *
@@ -398,8 +395,7 @@ enum s3k_excpt s3k_msetreg(uint64_t i, uint64_t pid, enum s3k_reg reg,
  * @param cap Read capability
  * @return TODO
  */
-enum s3k_excpt s3k_mgetcap(uint64_t i, uint64_t pid, uint64_t j,
-			   union s3k_cap *cap);
+enum s3k_excpt s3k_mgetcap(uint64_t i, uint64_t pid, uint64_t j, union s3k_cap *cap);
 /**
  * @brief Monitor give a capability to a process.
  *
@@ -409,8 +405,7 @@ enum s3k_excpt s3k_mgetcap(uint64_t i, uint64_t pid, uint64_t j,
  * @param dst Destination of capability
  * @return TODO
  */
-enum s3k_excpt s3k_mgivecap(uint64_t i, uint64_t pid, uint64_t src,
-			    uint64_t dst);
+enum s3k_excpt s3k_mgivecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst);
 /**
  * @brief Monitor take a capability from a process.
  *
@@ -420,8 +415,7 @@ enum s3k_excpt s3k_mgivecap(uint64_t i, uint64_t pid, uint64_t src,
  * @param dst Destination of capability
  * @return TODO
  */
-enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src,
-			    uint64_t dst);
+enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src, uint64_t dst);
 /// @}
 
 /**************************** API UTILITY *********************************/
@@ -438,8 +432,7 @@ enum s3k_excpt s3k_mtakecap(uint64_t i, uint64_t pid, uint64_t src,
  * @return The PMP NAPOT representation of the range.
  * @warning If there is not NAPOT representation, then returns 0.
  */
-uint64_t s3k_pmp_napot_addr(uint64_t begin, uint64_t end)
-    __attribute__((const));
+uint64_t s3k_pmp_napot_addr(uint64_t begin, uint64_t end) __attribute__((const));
 /**
  * @brief Returns start of the range of PMP NAPOT address.
  * @param addr The PMP NAPOT address.
@@ -484,8 +477,7 @@ union s3k_cap s3k_time(uint64_t hartid, uint64_t begin, uint64_t end);
  * @param rwx Read, write, and execute permissions.
  * @return A memory slice capability.
  */
-union s3k_cap s3k_memory(uint64_t begin, uint64_t end, uint64_t offset,
-			 uint64_t rwx);
+union s3k_cap s3k_memory(uint64_t begin, uint64_t end, uint64_t offset, uint64_t rwx);
 
 /**
  * @brief Create a PMP NAPOT frame capability
