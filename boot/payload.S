@@ -1,24 +1,25 @@
-.globl uart_bin
-.globl uart_bin_len
-.globl app0_bin
-.globl app0_bin_len
-.globl app1_bin
-.globl app1_bin_len
+.globl uartppp_bin
+.globl uartppp_bin_len
+
+.globl monitor_bin
+.globl monitor_bin_len
+
+.globl crypto_bin
+.globl crypto_bin_len
 
 .section .rodata.payloads
 
-uart_bin:
-	.incbin "build/uart.bin"
-uart_bin_len:
-.quad . - uart_bin
+crypto_bin:
+	.incbin "build/crypto.bin"
+crypto_bin_len:
+.quad . - crypto_bin
 
-app0_bin:
-	.incbin "build/app0.bin"
-app0_bin_len:
-.quad . - app0_bin
+monitor_bin:
+	.incbin "build/monitor.bin"
+monitor_bin_len:
+.quad . - monitor_bin
 
-app1_bin:
-	.incbin "build/app1.bin"
-app1_bin_len:
-.quad . - app1_bin
-
+uartppp_bin:
+	.incbin "build/uartppp.bin"
+uartppp_bin_len:
+.quad . - uartppp_bin

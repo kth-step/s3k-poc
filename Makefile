@@ -22,7 +22,7 @@ ASFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
 	-g
 
 LDFLAGS=-march=rv64imac -mabi=lp64 -mcmodel=medany\
-	-nostdlib -static-pie -mno-relax\
+	-nostartfiles -static-pie -mno-relax\
 	-Wl,--gc-sections,--no-dynamic-linker\
 	-flto
 #	-Wl,--no-warn-rwx-segments\
@@ -64,20 +64,36 @@ $(BUILD)/%.S.o: %.S
 # Boot loader
 SRCS=boot/main.c boot/capman.c boot/payload.S common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
-build/boot/payload.S.o: build/uart.bin build/app0.bin build/app1.bin
+build/boot/payload.S.o: build/monitor.bin build/crypto.bin build/uartppp.bin
 $(BUILD)/boot.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
 	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
 
-# UART driver
-SRCS=uart/main.c uart/ppp.c common/start.S
+# Monitor
+SRCS=monitor/main.c common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
-$(BUILD)/uart.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
+$(BUILD)/monitor.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
 	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
 
+# crypto
+SRCS=crypto/main.c common/start.S
+DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
+$(BUILD)/crypto.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
+	@mkdir -p ${@D}
+	@printf "CC $@\n"
+	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+
+# UART driver
+SRCS=uartppp/main.c uartppp/ppp.c common/start.S
+DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
+$(BUILD)/uartppp.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
+	@mkdir -p ${@D}
+	@printf "CC $@\n"
+	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	
 # Application 0
 SRCS=app0/main.c common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))

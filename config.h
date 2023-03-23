@@ -8,15 +8,15 @@
 #define NCAP 64
 
 /* Number of time slices in a major frame. */
-#define NSLICE 16
+#define NSLICE 64
 
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
 #define TICKS_PER_SECOND 1000000ull
-#define NTICK		 (TICKS_PER_SECOND / 10ull)
+#define NTICK		 (TICKS_PER_SECOND / NSLICE/ 100ull)
 
 /* Number of scheduler ticks. */
-#define NSLACK 10000
+#define NSLACK 100
 
 /* Number of communications channels */
 #define NCHANNEL 8

@@ -32,6 +32,15 @@ bool capman_move(uint64_t src, uint64_t dst)
 	return false;
 }
 
+bool capman_delcap(uint64_t idx) {
+	if (caps[idx].raw) {
+		s3k_delcap(idx);
+		caps[idx].raw = 0;
+		return true;
+	}
+	return false;
+}
+
 void capman_update(void)
 {
 	ncaps = 0;
@@ -44,20 +53,26 @@ void capman_update(void)
 
 static void _dump_time(struct s3k_time time)
 {
-	alt_printf("time{begin=0x%X,end=0x%X,free=0x%X}\n", time.begin, time.end, time.free);
+	alt_printf("time{hartid=0x%X,begin=0x%X,end=0x%X,free=0x%X}\n", time.hartid, time.begin, time.end, time.free);
 }
 
 static void _dump_memory(struct s3k_memory mem)
 {
+	uint64_t begin = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.begin << 12);
+	uint64_t end =   ((uint64_t)mem.offset << 27) + ((uint64_t)mem.end << 12);
+	uint64_t free =  ((uint64_t)mem.offset << 27) + ((uint64_t)mem.free << 12);
 	alt_printf(
-	    "memory{begin=0x%X,end=0x%X,free=0x%x,offset=0x%X,lock=0x%X,rwx=0x%X}"
+	    "memory{begin=0x%X,end=0x%X,free=0x%x,lock=0x%X,rwx=0x%X}"
 	    "\n",
-	    mem.begin, mem.end, mem.free, mem.offset, mem.lock, mem.rwx);
+	    begin, end, free, mem.lock, mem.rwx);
 }
 
 static void _dump_pmp(struct s3k_pmp pmp)
 {
-	alt_printf("pmp{addr=0x%X,cfg=0x%X}\n", pmp.addr, pmp.cfg);
+	uint64_t begin = s3k_pmp_napot_begin(pmp.addr);
+	uint64_t end = s3k_pmp_napot_end(pmp.addr);
+	uint64_t rwx = pmp.cfg & 0x7;
+	alt_printf("pmp{begin=0x%X,end=0x%X,rwx=0x%X}\n", begin, end, rwx);
 }
 
 static void _dump_monitor(struct s3k_monitor mon)
@@ -70,38 +85,43 @@ static void _dump_channel(struct s3k_channel chan)
 	alt_printf("channel{begin=0x%X,end=0x%X,free=0x%X}\n", chan.begin, chan.end, chan.free);
 }
 
-void capman_dump(void)
+void capman_dump(union s3k_cap cap)
+{
+	switch (cap.type) {
+	case S3K_CAPTY_NONE:
+		break;
+	case S3K_CAPTY_TIME:
+		_dump_time(cap.time);
+		break;
+	case S3K_CAPTY_MEMORY:
+		_dump_memory(cap.memory);
+		break;
+	case S3K_CAPTY_PMP:
+		_dump_pmp(cap.pmp);
+		break;
+	case S3K_CAPTY_MONITOR:
+		_dump_monitor(cap.monitor);
+		break;
+	case S3K_CAPTY_CHANNEL:
+		_dump_channel(cap.channel);
+		break;
+	default:
+		alt_printf("0x%X\n", cap.raw);
+		break;
+	}
+}
+
+void capman_dump_all(void)
 {
 	for (int i = 0; i < NCAP; i++) {
 		if (caps[i].raw == 0)
 			continue;
 		alt_printf("0x%x: ", i);
-		switch (caps[i].type) {
-		case S3K_CAPTY_NONE:
-			break;
-		case S3K_CAPTY_TIME:
-			_dump_time(caps[i].time);
-			break;
-		case S3K_CAPTY_MEMORY:
-			_dump_memory(caps[i].memory);
-			break;
-		case S3K_CAPTY_PMP:
-			_dump_pmp(caps[i].pmp);
-			break;
-		case S3K_CAPTY_MONITOR:
-			_dump_monitor(caps[i].monitor);
-			break;
-		case S3K_CAPTY_CHANNEL:
-			_dump_channel(caps[i].channel);
-			break;
-		default:
-			alt_printf("0x%X\n", caps[i].raw);
-			break;
-		}
+		capman_dump(caps[i]);
 	}
 }
 
-static int find_free(void)
+int capman_find_free(void)
 {
 	for (int i = NCAP - 1; i >= 0; --i) {
 		if (caps[i].type == S3K_CAPTY_NONE)
@@ -114,6 +134,15 @@ static int find_memory_derive(union s3k_cap cap)
 {
 	for (int i = NCAP - 1; i >= 0; --i) {
 		if (s3k_memory_derive(caps[i], cap))
+			return i;
+	}
+	return -1;
+}
+
+static int find_time_derive(union s3k_cap cap)
+{
+	for (int i = NCAP - 1; i >= 0; --i) {
+		if (s3k_time_derive(caps[i], cap))
 			return i;
 	}
 	return -1;
@@ -136,40 +165,130 @@ void capman_getpmp(uint8_t pmp[8])
 	}
 }
 
-int capman_derive_pmp(uint64_t begin, uint64_t end, uint64_t rwx)
+bool capman_derive_pmp(int idx, uint64_t begin, uint64_t end, uint64_t rwx)
 {
 	uint64_t addr = s3k_pmp_napot_addr(begin, end);
 	union s3k_cap pmp = s3k_pmp(addr, rwx);
 	if (begin != s3k_pmp_napot_begin(addr) || end != s3k_pmp_napot_end(addr))
-		return -1;
+		return false;
 
 	uint64_t i = find_memory_derive(pmp);
-	uint64_t j = find_free();
-	if (s3k_drvcap(i, j, pmp) == S3K_EXCPT_NONE) {
+	if (s3k_drvcap(i, idx, pmp) == S3K_EXCPT_NONE) {
 		caps[i] = s3k_getcap(i);
-		caps[j] = s3k_getcap(j);
+		caps[idx] = s3k_getcap(idx);
 		ncaps++;
-		return j;
+		return true;
 	}
-	return -1;
+	return false;
 }
 
-int capman_derive_mem(uint64_t begin, uint64_t end, uint64_t rwx)
+bool capman_derive_mem(int idx, uint64_t begin, uint64_t end, uint64_t rwx)
 {
 	uint64_t _offset = begin >> 27;
 	uint64_t _begin = (begin >> 12) & 0xFFFF;
 	uint64_t _end = (end >> 12) & 0xFFFF;
 	union s3k_cap mem = s3k_memory(_begin, _end, _offset, rwx);
 	if (_begin > _end || ((begin >> 27) != (end >> 27)))
-		return -1;
+		return false;
 
 	uint64_t i = find_memory_derive(mem);
-	uint64_t j = find_free();
-	if (s3k_drvcap(i, j, mem) == S3K_EXCPT_NONE) {
+	if (s3k_drvcap(i, idx, mem) == S3K_EXCPT_NONE) {
 		caps[i] = s3k_getcap(i);
-		caps[j] = s3k_getcap(j);
+		caps[idx] = s3k_getcap(idx);
 		ncaps++;
-		return j;
+		return true;
+	}
+	return false;
+}
+
+bool capman_derive_time(int idx, uint64_t hartid, uint64_t begin, uint64_t end)
+{
+	union s3k_cap mem = s3k_time(hartid, begin, end);
+	if (begin > end)
+		return false;
+
+	uint64_t i = find_time_derive(mem);
+	if (s3k_drvcap(i, idx, mem) == S3K_EXCPT_NONE) {
+		caps[i] = s3k_getcap(i);
+		caps[idx] = s3k_getcap(idx);
+		ncaps++;
+		return true;
+	}
+	return false;
+}
+
+int capman_find_monitor(uint64_t pid)
+{
+	for (int i = 0; i < NCAP; i++) 
+	{
+		if (caps[i].type == S3K_CAPTY_MONITOR) {
+			struct s3k_monitor mon = caps[i].monitor;
+			if (mon.free <= pid && pid < mon.end) {
+				return i;
+			}
+		}
 	}
 	return -1;
+}
+
+bool capman_mresume(uint64_t pid)
+{
+	int moncap = capman_find_monitor(pid);
+	if (moncap < 0)
+		return false;
+	s3k_mresume(moncap, pid);
+	return true;
+}
+
+bool capman_msuspend(uint64_t pid)
+{
+	int moncap = capman_find_monitor(pid);
+	if (moncap < 0)
+		return false;
+	s3k_msuspend(moncap, pid);
+	return true;
+}
+
+bool capman_mgivecap(uint64_t pid, uint64_t src, uint64_t dest)
+{
+	int moncap = capman_find_monitor(pid);
+	if (moncap < 0)
+		return false;
+	int excpt = s3k_mgivecap(moncap, pid, src, dest);
+	if (excpt == S3K_CAPTY_NONE) {
+		caps[src].raw = 0;
+		return true;
+	}
+	return false;
+}
+
+bool capman_mtakecap(uint64_t pid, uint64_t src, uint64_t dest)
+{
+	int moncap = capman_find_monitor(pid);
+	if (moncap < 0)
+		return false;
+	int excpt = s3k_mtakecap(moncap, pid, src, dest);
+	if (excpt == S3K_CAPTY_NONE) {
+		caps[dest] = s3k_getcap(dest);
+		return true;
+	}
+	return false;
+}
+
+bool capman_msetreg(uint64_t pid, uint64_t reg, uint64_t val) 
+{
+	int moncap = capman_find_monitor(pid);
+	if (moncap < 0)
+		return false;
+	int excpt = s3k_msetreg(moncap, pid, reg, val);
+	return (excpt == S3K_CAPTY_NONE);
+}
+
+bool capman_mgetreg(uint64_t pid, uint64_t reg, uint64_t *val) 
+{
+	int moncap = capman_find_monitor(pid);
+	if (moncap < 0)
+		return false;
+	int excpt = s3k_mgetreg(moncap, pid, reg, val);
+	return (excpt == S3K_CAPTY_NONE);
 }
