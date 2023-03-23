@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "altio.h"
 #include "ppp.h"
 #include "ring_buffer.h"
 #include "s3k.h"
@@ -21,19 +22,10 @@ size_t strlen(const char *s)
 
 void setup(char *_buf, size_t _size)
 {
-	buffer = _buf;
-	buffer_size = _size;
-	ppp_send(msg_ready, strlen(msg_long));
+	alt_puts("setup uart");
 }
 
 void loop(void)
 {
-	while (1) {
-		int len = ppp_recv(buffer, buffer_size);
-		if (len == -1)
-			ppp_send(buffer, buffer_size);
-		else
-			ppp_send(buffer, len);
-		s3k_yield();
-	}
+	alt_puts("loop uart");
 }

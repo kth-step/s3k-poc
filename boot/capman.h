@@ -21,5 +21,5 @@ bool capman_mresume(uint64_t pid);
 bool capman_msuspend(uint64_t pid);
 bool capman_mgivecap(uint64_t pid, uint64_t src, uint64_t dest);
 bool capman_mtakecap(uint64_t pid, uint64_t src, uint64_t dest);
-bool capman_msetreg(uint64_t pid, uint64_t reg, uint64_t val); 
+bool capman_msetreg(uint64_t pid, uint64_t reg, uint64_t val);
 bool capman_mgetreg(uint64_t pid, uint64_t reg, uint64_t *val);

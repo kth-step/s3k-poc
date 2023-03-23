@@ -11,8 +11,8 @@
 
 #define BOOT_PID    0
 #define MONITOR_PID 1
-#define UARTPPP_PID 2
-#define CRYPTO_PID  3
+#define CRYPTO_PID  2
+#define UARTPPP_PID 3
 #define APP0_PID    4
 #define APP1_PID    5
 
@@ -85,6 +85,8 @@ void setup_time_slices(void)
 	capman_derive_time(0x1b, hartid, 48, 56);
 	// UART
 	capman_derive_time(0x1c, hartid, 56, 64);
+	// Temporary time slice for bootloader
+	capman_derive_time(0x1d, hartid, 16, 32);
 }
 
 void setup_monitor(void)
@@ -105,8 +107,7 @@ void setup_monitor(void)
 	capman_mgivecap(MONITOR_PID, 0x13, 0x11);
 	// Give monitor time slice
 	capman_mgivecap(MONITOR_PID, 0x1a, 0x18);
-	
-	
+
 	// Set PC
 	capman_msetreg(MONITOR_PID, S3K_REG_PC, MONITOR_BASE);
 }
@@ -128,7 +129,7 @@ void setup_crypto(void)
 	// Give crypto time slices
 	capman_mgivecap(CRYPTO_PID, 0x19, 0x19);
 	capman_mgivecap(CRYPTO_PID, 0x1b, 0x1b);
-	
+
 	// Set PC
 	capman_msetreg(CRYPTO_PID, S3K_REG_PC, CRYPTO_BASE);
 }
@@ -139,22 +140,20 @@ void setup_uartppp(void)
 	capman_derive_pmp(0x20, UARTPPP_BASE, UARTPPP_BASE + 0x2000, S3K_RWX);
 	pmpcaps[1] = 0x20;
 	capman_setpmp(pmpcaps);
-	memcpy((void *)UARTPPP_BASE, crypto_bin, crypto_bin_len);
-
-	// Create uart pmp
-	capman_derive_pmp(0x21, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	memcpy((void *)UARTPPP_BASE, uartppp_bin, uartppp_bin_len);
 
 	// *** Give resources
 	capman_msetreg(UARTPPP_PID, S3K_REG_PC, UARTPPP_BASE);
 	// Give uart PMP slice
 	capman_mgivecap(UARTPPP_PID, 0x20, 0x0);
-	capman_mgivecap(UARTPPP_PID, 0x21, 0x1);
+	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	capman_mgivecap(UARTPPP_PID, 0x20, 0x1);
 	// Give uart memory slice
 	capman_mgivecap(UARTPPP_PID, 0x12, 0x10);
 	// Give uart time slices
 	capman_mgivecap(UARTPPP_PID, 0x18, 0x19);
 	capman_mgivecap(UARTPPP_PID, 0x1c, 0x1b);
-	
+
 	// Set PC
 	capman_msetreg(UARTPPP_PID, S3K_REG_PC, UARTPPP_BASE);
 	capman_msetreg(UARTPPP_PID, S3K_REG_PMP, 0x0100);
@@ -184,6 +183,7 @@ void setup(void)
 	alt_puts("------------------");
 
 	setup_memory_slices();
+	setup_time_slices();
 	setup_monitor();
 	setup_crypto();
 	setup_uartppp();
@@ -197,7 +197,7 @@ void setup(void)
 			union s3k_cap cap;
 			if (i) {
 				s3k_mgetcap(0x7, i, j, &cap);
-			}else {
+			} else {
 				cap = s3k_getcap(j);
 			}
 			if (cap.raw == 0)
@@ -207,9 +207,16 @@ void setup(void)
 		}
 		alt_puts("------------------");
 	}
+	s3k_yield();
 
+	capman_mresume(UARTPPP_PID);
+	capman_mresume(CRYPTO_PID);
+	capman_mresume(MONITOR_PID);
+	s3k_yield();
 }
 
 void loop(void)
 {
+	alt_putstr(".");
+	s3k_yield();
 }

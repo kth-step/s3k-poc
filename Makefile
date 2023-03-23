@@ -68,7 +68,7 @@ build/boot/payload.S.o: build/monitor.bin build/crypto.bin build/uartppp.bin
 $(BUILD)/boot.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
-	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # Monitor
 SRCS=monitor/main.c common/start.S
@@ -76,7 +76,7 @@ DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 $(BUILD)/monitor.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
-	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # crypto
 SRCS=crypto/main.c common/start.S
@@ -84,7 +84,7 @@ DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 $(BUILD)/crypto.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
-	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # UART driver
 SRCS=uartppp/main.c uartppp/ppp.c common/start.S
@@ -92,7 +92,7 @@ DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 $(BUILD)/uartppp.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
-	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 	
 # Application 0
 SRCS=app0/main.c common/start.S
@@ -100,7 +100,7 @@ DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 $(BUILD)/app0.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
-	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # Application 1
 SRCS=app1/main.c common/start.S
@@ -108,7 +108,7 @@ DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 $(BUILD)/app1.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
 	@printf "CC $@\n"
-	@$(CC) $(LDFLAGS) -Tdefault.lds -o $@ $^
+	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # Make kernel
 $(BUILD)/s3k.elf:

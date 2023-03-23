@@ -4,4 +4,4 @@
 #define UARTPPP_BASE 0x80026000ull
 #define APP0_BASE    0x80028000ull
 #define APP1_BASE    0x8002c000ull
-#define SHARED_BASE 0x80030000ull
+#define SHARED_BASE  0x80030000ull

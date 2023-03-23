@@ -32,7 +32,8 @@ bool capman_move(uint64_t src, uint64_t dst)
 	return false;
 }
 
-bool capman_delcap(uint64_t idx) {
+bool capman_delcap(uint64_t idx)
+{
 	if (caps[idx].raw) {
 		s3k_delcap(idx);
 		caps[idx].raw = 0;
@@ -53,14 +54,15 @@ void capman_update(void)
 
 static void _dump_time(struct s3k_time time)
 {
-	alt_printf("time{hartid=0x%X,begin=0x%X,end=0x%X,free=0x%X}\n", time.hartid, time.begin, time.end, time.free);
+	alt_printf("time{hartid=0x%X,begin=0x%X,end=0x%X,free=0x%X}\n", time.hartid, time.begin,
+		   time.end, time.free);
 }
 
 static void _dump_memory(struct s3k_memory mem)
 {
 	uint64_t begin = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.begin << 12);
-	uint64_t end =   ((uint64_t)mem.offset << 27) + ((uint64_t)mem.end << 12);
-	uint64_t free =  ((uint64_t)mem.offset << 27) + ((uint64_t)mem.free << 12);
+	uint64_t end = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.end << 12);
+	uint64_t free = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.free << 12);
 	alt_printf(
 	    "memory{begin=0x%X,end=0x%X,free=0x%x,lock=0x%X,rwx=0x%X}"
 	    "\n",
@@ -219,8 +221,7 @@ bool capman_derive_time(int idx, uint64_t hartid, uint64_t begin, uint64_t end)
 
 int capman_find_monitor(uint64_t pid)
 {
-	for (int i = 0; i < NCAP; i++) 
-	{
+	for (int i = 0; i < NCAP; i++) {
 		if (caps[i].type == S3K_CAPTY_MONITOR) {
 			struct s3k_monitor mon = caps[i].monitor;
 			if (mon.free <= pid && pid < mon.end) {
@@ -275,7 +276,7 @@ bool capman_mtakecap(uint64_t pid, uint64_t src, uint64_t dest)
 	return false;
 }
 
-bool capman_msetreg(uint64_t pid, uint64_t reg, uint64_t val) 
+bool capman_msetreg(uint64_t pid, uint64_t reg, uint64_t val)
 {
 	int moncap = capman_find_monitor(pid);
 	if (moncap < 0)
@@ -284,7 +285,7 @@ bool capman_msetreg(uint64_t pid, uint64_t reg, uint64_t val)
 	return (excpt == S3K_CAPTY_NONE);
 }
 
-bool capman_mgetreg(uint64_t pid, uint64_t reg, uint64_t *val) 
+bool capman_mgetreg(uint64_t pid, uint64_t reg, uint64_t *val)
 {
 	int moncap = capman_find_monitor(pid);
 	if (moncap < 0)

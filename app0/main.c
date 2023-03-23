@@ -1,8 +1,8 @@
-#include "ring_buffer.h"
 #include "altio.h"
+#include "ring_buffer.h"
 #define SHARED 0x80030000
 
-struct ring_buffer *rb = (struct ring_buffer*)SHARED;
+struct ring_buffer *rb = (struct ring_buffer *)SHARED;
 
 void setup(void)
 {
@@ -23,9 +23,10 @@ int member(char c, char *str)
 void loop(void)
 {
 	char c;
-	while (!ring_buffer_pop(rb, &c));	
+	while (!ring_buffer_pop(rb, &c))
+		;
 	if (c == '\r')
-	alt_putchar('\n');
+		alt_putchar('\n');
 	if (member(c, konsonanter)) {
 		alt_putchar(c);
 		alt_putchar('o');
