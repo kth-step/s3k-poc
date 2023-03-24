@@ -27,5 +27,5 @@ void setup(char *_buf, size_t _size)
 
 void loop(void)
 {
-	alt_puts("loop uart");
+	s3k_yield();
 }

@@ -61,9 +61,9 @@ void setup_memory_slices(void)
 	// Monitor slice
 	capman_derive_mem(0x10, MONITOR_BASE, MONITOR_BASE + 0x4000, S3K_RWX);
 	// Crypto slice
-	capman_derive_mem(0x11, CRYPTO_BASE, CRYPTO_BASE + 0x2000, S3K_RWX);
+	capman_derive_mem(0x11, CRYPTO_BASE, CRYPTO_BASE + 0x4000, S3K_RWX);
 	// Uart PPP slice
-	capman_derive_mem(0x12, UARTPPP_BASE, UARTPPP_BASE + 0x2000, S3K_RWX);
+	capman_derive_mem(0x12, UARTPPP_BASE, UARTPPP_BASE + 0x4000, S3K_RWX);
 	// Application slice
 	capman_derive_mem(0x13, APP0_BASE, SHARED_BASE, S3K_RWX);
 	// Shared memory slice
@@ -108,14 +108,19 @@ void setup_monitor(void)
 	// Give monitor time slice
 	capman_mgivecap(MONITOR_PID, 0x1a, 0x18);
 
+	// UART access
+	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	capman_mgivecap(MONITOR_PID, 0x20, 0x1);
+
 	// Set PC
 	capman_msetreg(MONITOR_PID, S3K_REG_PC, MONITOR_BASE);
+	capman_msetreg(MONITOR_PID, S3K_REG_PMP, 0x0100);
 }
 
 void setup_crypto(void)
 {
 	// Copy over crypto binary
-	capman_derive_pmp(0x20, CRYPTO_BASE, CRYPTO_BASE + 0x2000, S3K_RWX);
+	capman_derive_pmp(0x20, CRYPTO_BASE, CRYPTO_BASE + 0x4000, S3K_RWX);
 	pmpcaps[1] = 0x20;
 	capman_setpmp(pmpcaps);
 	memcpy((void *)CRYPTO_BASE, crypto_bin, crypto_bin_len);
@@ -130,14 +135,19 @@ void setup_crypto(void)
 	capman_mgivecap(CRYPTO_PID, 0x19, 0x19);
 	capman_mgivecap(CRYPTO_PID, 0x1b, 0x1b);
 
+	// UART access
+	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	capman_mgivecap(CRYPTO_PID, 0x20, 0x1);
+
 	// Set PC
 	capman_msetreg(CRYPTO_PID, S3K_REG_PC, CRYPTO_BASE);
+	capman_msetreg(CRYPTO_PID, S3K_REG_PMP, 0x0100);
 }
 
 void setup_uartppp(void)
 {
 	// Copy over monitor binary
-	capman_derive_pmp(0x20, UARTPPP_BASE, UARTPPP_BASE + 0x2000, S3K_RWX);
+	capman_derive_pmp(0x20, UARTPPP_BASE, UARTPPP_BASE + 0x4000, S3K_RWX);
 	pmpcaps[1] = 0x20;
 	capman_setpmp(pmpcaps);
 	memcpy((void *)UARTPPP_BASE, uartppp_bin, uartppp_bin_len);

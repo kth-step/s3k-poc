@@ -79,7 +79,7 @@ $(BUILD)/monitor.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # crypto
-SRCS=crypto/main.c common/start.S
+SRCS=crypto/main.c crypto/aes128.c common/start.S
 DEPS+=$(patsubst %, $(BUILD)/%.d, $(SRCS))
 $(BUILD)/crypto.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@mkdir -p ${@D}
@@ -111,7 +111,7 @@ $(BUILD)/app1.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 	@$(CC) $(LDFLAGS) -Tdefault.ld -o $@ $^
 
 # Make kernel
-$(BUILD)/s3k.elf:
+$(BUILD)/s3k.elf: ${CONFIG_H}
 	@mkdir -p ${@D}
 	@printf "\nBuilding S3K\n"
 	@${MAKE} -C ${S3K_PATH} options ${abspath $@} CONFIG_H=${abspath ${CONFIG_H}}

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "s3k.h"
+#include "altio.h"
 
 void setup(void)
 {
@@ -10,4 +11,5 @@ void setup(void)
 
 void loop(void)
 {
+	s3k_yield();
 }
