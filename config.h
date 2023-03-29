@@ -21,7 +21,7 @@
 /* Number of communications channels */
 #define NCHANNEL 8
 
-//#define NDEBUG
+#define NDEBUG
 
 /* Uncomment to enable memory protection */
 // #define MEMORY_PROTECTION

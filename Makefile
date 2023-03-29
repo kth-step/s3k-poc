@@ -42,14 +42,20 @@ options:
 
 # Clean all
 clean:
-	git clean -fdX
-	${MAKE} -C ${S3K_PATH} clean
+	rm -rf $(BUILD)
 
 # API
-api:
-	$(MAKE) -C $(S3K_PATH)/api libs3k.a
+api: inc/s3k.h lib/libs3k.a
+
+inc/s3k.h: $(S3K_PATH)/api/s3k.h
 	cp $(S3K_PATH)/api/s3k.h inc/s3k.h
+
+lib/libs3k.a: $(wildcard $(S3K_PATH)/api/*.c) inc/s3k.h
+	$(MAKE) -C $(S3K_PATH)/api libs3k.a
 	cp $(S3K_PATH)/api/libs3k.a lib/libs3k.a
+
+qemu: $(BUILD)/s3k.elf $(BUILD)/boot.elf
+	./scripts/qemu.sh $^
 
 $(BUILD)/%.c.o: %.c
 	@mkdir -p ${@D}
@@ -113,8 +119,10 @@ $(BUILD)/app1.elf: $(patsubst %, $(BUILD)/%.o, $(SRCS)) lib/libs3k.a
 # Make kernel
 $(BUILD)/s3k.elf: ${CONFIG_H}
 	@mkdir -p ${@D}
-	@printf "\nBuilding S3K\n"
-	@${MAKE} -C ${S3K_PATH} options ${abspath $@} CONFIG_H=${abspath ${CONFIG_H}}
+	@${MAKE} -C ${S3K_PATH} options kernel  \
+		CONFIG_H=${abspath ${CONFIG_H}} \
+		BUILD_DIR=$(abspath $(BUILD))   \
+		OBJ_DIR=$(abspath $(BUILD))/s3k
 
 # Create bin file from elf
 %.bin: %.elf
@@ -125,9 +133,6 @@ $(BUILD)/s3k.elf: ${CONFIG_H}
 %.da: %.elf
 	@printf "OBJDUMP $< $@\n"
 	@${OBJDUMP} -d $< > $@
-
-qemu: $(BUILD)/s3k.elf $(BUILD)/boot.elf
-	./scripts/qemu.sh $(BUILD)/s3k.elf $(BUILD)/boot.elf
 
 .PHONY: all api clean qemu s3k.elf
 

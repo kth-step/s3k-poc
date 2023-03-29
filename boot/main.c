@@ -24,7 +24,7 @@ void traphandler(void) __attribute__((interrupt("user")));
 void traphandler(void)
 {
 	static int pmp = 4;
-	uint64_t epc = s3k_getreg(S3K_REG_EPC);
+	//	uint64_t epc = s3k_getreg(S3K_REG_EPC);
 	uint64_t ecause = s3k_getreg(S3K_REG_ECAUSE);
 	uint64_t eval = s3k_getreg(S3K_REG_EVAL);
 	if (ecause == 0x7) {
@@ -179,7 +179,6 @@ void setup(void)
 	// We can now print stuff
 	alt_puts("\nboot: Setting up.");
 
-
 	alt_puts("\ntesting alt_printf");
 	alt_puts("------------------");
 	alt_printf("plain: hello, world\n");
@@ -215,6 +214,15 @@ void setup(void)
 		alt_puts("------------------");
 	}
 	s3k_yield();
+
+	s3k_drvcap(0x8, 0x9, s3k_socket(0, 0));
+	s3k_drvcap(0x9, 0xa, s3k_socket(0, 1));
+	s3k_mgivecap(0x7, CRYPTO_PID, 0x9, 0x9);
+	s3k_mgivecap(0x7, MONITOR_PID, 0xa, 0xa);
+	s3k_drvcap(0x8, 0x9, s3k_socket(1, 0));
+	s3k_drvcap(0x9, 0xa, s3k_socket(1, 1));
+	s3k_mgivecap(0x7, MONITOR_PID, 0x9, 0x9);
+	s3k_mgivecap(0x7, CRYPTO_PID, 0xa, 0xa);
 
 	capman_mresume(UARTPPP_PID);
 	capman_mresume(CRYPTO_PID);
