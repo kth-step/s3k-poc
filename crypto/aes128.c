@@ -265,7 +265,7 @@ static void mixcolumns_inv(uint8_t buf[16])
 	}
 }
 
-static void addroundkey(uint8_t buf[16], const uint8_t key[16])
+static void xorblock(uint8_t buf[16], const uint8_t key[16])
 {
 	for (int i = 0; i < 16; ++i)
 		buf[i] ^= key[i];
@@ -283,40 +283,71 @@ void aes128_keyexpansion(const uint32_t key[4], uint32_t rk[44])
 	}
 }
 
-void aes128_enc_rk(const uint32_t round_keys[44], uint8_t buf[16])
+void aes128_enc(const uint32_t rk[44], uint8_t buf[16])
 {
-	addroundkey(buf, (uint8_t *)round_keys);
+	xorblock(buf, (uint8_t *)rk);
 	for (int i = 1; i <= 9; ++i) {
 		subshiftrows(buf);
 		mixcolumns(buf);
-		addroundkey(buf, (uint8_t *)&round_keys[i * 4]);
+		xorblock(buf, (uint8_t *)&rk[i * 4]);
 	}
 	subshiftrows(buf);
-	addroundkey(buf, (uint8_t *)&round_keys[40]);
+	xorblock(buf, (uint8_t *)&rk[40]);
 }
 
-void aes128_dec_rk(const uint32_t round_keys[44], uint8_t buf[16])
+void aes128_dec(const uint32_t rk[44], uint8_t buf[16])
 {
-	addroundkey(buf, (const uint8_t *)&round_keys[40]);
+	xorblock(buf, (const uint8_t *)&rk[40]);
 	subshiftrows_inv(buf);
 	for (int i = 9; i >= 1; --i) {
-		addroundkey(buf, (uint8_t *)&round_keys[i * 4]);
+		xorblock(buf, (uint8_t *)&rk[i * 4]);
 		mixcolumns_inv(buf);
 		subshiftrows_inv(buf);
 	}
-	addroundkey(buf, (const uint8_t *)round_keys);
+	xorblock(buf, (const uint8_t *)rk);
 }
 
-void aes128_enc(const uint32_t key[4], uint8_t buf[16])
+void aes128_cbc_mac(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf, uint8_t mac[16], int len) 
 {
-	uint32_t round_keys[44];
-	aes128_keyexpansion(key, round_keys);
-	aes128_enc_rk(round_keys, buf);
+	// assert((len & 0xFF) == 0);
+	// assert(len >= 16);
+	// Copy first block
+	for (int i = 0; i < 16; ++i)
+		mac[i] = iv[i] ^ buf[i];
+	aes128_enc(rk, mac);
+	for (int i = 16; i < len; i += 16) {
+		xorblock(mac, &buf[i - 16]);
+		aes128_enc(rk, mac);
+	}
 }
 
-void aes128_dec(const uint32_t key[4], uint8_t buf[16])
+void aes128_cbc_enc(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf, int len)
 {
-	uint32_t round_keys[44];
-	aes128_keyexpansion(key, round_keys);
-	aes128_dec_rk(round_keys, buf);
+	// assert((len & 0xFF) == 0);
+	
+	// XOR with initialization vector,
+	// then encrypt block.
+	xorblock(buf, iv);
+	aes128_enc(rk, buf);
+	for (int i = 16; i < len; i += 16) {
+		// XOR with previous block,
+		// then encrypt block.
+		xorblock(&buf[i], &buf[i - 16]);
+		aes128_enc(rk, &buf[i]);
+	}
+}
+
+void aes128_cbc_dec(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf, int len)
+{
+	// assert((len & 0xFF) == 0);
+	for (int i = len - 16; i >= 16; i -= 16) {
+		// Decrypt block, then
+		// XOR with previous block.
+		aes128_dec(rk, &buf[i]);
+		xorblock(&buf[i], &buf[i - 16]);
+	}
+	// Decrypt block, then
+	// XOR with initialization vector.
+	aes128_dec(rk, buf);
+	xorblock(buf, iv);
 }

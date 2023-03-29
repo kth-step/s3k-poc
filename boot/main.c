@@ -24,34 +24,28 @@ void traphandler(void) __attribute__((interrupt("user")));
 void traphandler(void)
 {
 	static int pmp = 4;
+	uint64_t epc = s3k_getreg(S3K_REG_EPC);
 	uint64_t ecause = s3k_getreg(S3K_REG_ECAUSE);
 	uint64_t eval = s3k_getreg(S3K_REG_EVAL);
 	if (ecause == 0x7) {
 		// Try derive a pmp capability
 		uint64_t size = 0x1 << 27;
-		bool succ = false;
 		int i = capman_find_free();
 		while (size >= 0x1000) {
 			uint64_t begin = eval & ~(size - 1);
 			uint64_t end = begin + size;
-			if ((succ = capman_derive_pmp(i, begin, end, S3K_RW)))
-				break;
+			if (capman_derive_pmp(i, begin, end, S3K_RW)) {
+				// If a pmp cap was found use it
+				if (pmpcaps[pmp])
+					capman_delcap(pmpcaps[pmp]);
+				pmpcaps[pmp] = i;
+				capman_setpmp(pmpcaps);
+				pmp++;
+				if (pmp == 8)
+					pmp = 4;
+				return;
+			}
 			size >>= 1;
-		}
-		if (succ) {
-			// If a pmp cap was found use it
-			if (pmpcaps[pmp])
-				// Delete old cap (unless it is cap 0)
-				capman_delcap(pmpcaps[7]);
-			pmpcaps[pmp] = i;
-			capman_setpmp(pmpcaps);
-			pmp++;
-			if (pmp == 8)
-				pmp = 4;
-		} else {
-			// if not found, spin forever
-			while (1)
-				;
 		}
 	}
 }
@@ -174,14 +168,17 @@ void setup(void)
 	s3k_delcap(4);
 	s3k_delcap(5);
 	s3k_delcap(6);
-	// Initialize capman
-	capman_init();
+
 	// Setup trap handler
 	s3k_setreg(S3K_REG_TPC, (uint64_t)traphandler);
 	s3k_setreg(S3K_REG_TSP, (uint64_t)trapstack + sizeof(trapstack));
 
+	// Initialize capman
+	capman_init();
+
 	// We can now print stuff
 	alt_puts("\nboot: Setting up.");
+
 
 	alt_puts("\ntesting alt_printf");
 	alt_puts("------------------");

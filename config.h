@@ -13,7 +13,7 @@
 /* Number of ticks per quantum. */
 /* TICKS_PER_SECOND defined in platform.h */
 #define TICKS_PER_SECOND 1000000ull
-#define NTICK		 (TICKS_PER_SECOND / NSLICE / 100ull)
+#define NTICK		 (TICKS_PER_SECOND / NSLICE / 10ull)
 
 /* Number of scheduler ticks. */
 #define NSLACK 100
@@ -21,7 +21,7 @@
 /* Number of communications channels */
 #define NCHANNEL 8
 
-#define NDEBUG
+//#define NDEBUG
 
 /* Uncomment to enable memory protection */
 // #define MEMORY_PROTECTION
