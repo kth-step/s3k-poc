@@ -41,11 +41,11 @@ void setup(void)
 void loop(void)
 {
 	uint64_t recv_buf[4] = {0xa, 0xb, 0xc, 0xd};
+	uint64_t tag;
 	uint64_t start_time, end_time;
-	while (s3k_sendrecv(0xa, 0x9, recv_buf, -1ull, -1ull) != S3K_EXCPT_NONE)
-		;
-	alt_printf("crypto: 0x%X 0x%X 0x%X 0x%X\n", recv_buf[0], recv_buf[1], recv_buf[2],
-		   recv_buf[3]);
+	s3k_sendrecv(0xa, 0x9, recv_buf, -1ull, -1ull, &tag);
+	alt_printf("crypto: tag=%X msg=%X,%X,%X,%X\n", tag, 
+			recv_buf[0], recv_buf[1], recv_buf[2], recv_buf[3]);
 
 	start_time = s3k_gettime();
 	aes128_enc(enc_rk, buf);

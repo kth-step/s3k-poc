@@ -215,6 +215,7 @@ void setup(void)
 	}
 	s3k_yield();
 
+	// Create capabilities for IPC
 	s3k_drvcap(0x8, 0x9, s3k_socket(0, 0));
 	s3k_drvcap(0x9, 0xa, s3k_socket(0, 1));
 	s3k_mgivecap(0x7, CRYPTO_PID, 0x9, 0x9);
