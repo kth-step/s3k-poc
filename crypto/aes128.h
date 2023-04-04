@@ -11,10 +11,13 @@ void aes128_enc(const uint32_t rk[44], uint8_t buf[16]);
 void aes128_dec(const uint32_t rk[44], uint8_t buf[16]);
 
 // CBC-MAC with AES.
-void aes128_cbc_mac(const uint32_t rk[44], uint8_t *buf, uint8_t mac[16], int len);
+void aes128_cbc_mac(const uint32_t rk[44], uint8_t *buf, uint8_t mac[16],
+		    int len);
 
 // Cipher block chaining encryption
-void aes128_cbc_enc(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf, int len);
+void aes128_cbc_enc(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf,
+		    int len);
 
 // Cipher block chaining decryption
-void aes128_cbc_dec(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf, int len);
+void aes128_cbc_dec(const uint32_t rk[44], uint8_t iv[16], uint8_t *buf,
+		    int len);

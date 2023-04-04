@@ -1,12 +1,12 @@
 #include "ppp.h"
 
-#include <stdbool.h>
-
 #include "altio.h"
 
+#include <stdbool.h>
+
 #define PPP_ESCAPE '\\'
-#define PPP_SEQ	   '\n'
-#define PPP_COMP   ' '
+#define PPP_SEQ '\n'
+#define PPP_COMP ' '
 
 /**
  * Send data in buf.

@@ -1,11 +1,11 @@
 #include "capman.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #include "../config.h"
 #include "altio.h"
 #include "s3k.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 static uint64_t ncaps;
 static union s3k_cap caps[NCAP];
@@ -52,39 +52,44 @@ void capman_update(void)
 	}
 }
 
-static void _dump_time(struct s3k_time time)
+static void _dump_time(union s3k_cap cap)
 {
-	alt_printf("time{hartid=0x%X,begin=0x%X,end=0x%X,free=0x%X}\n", time.hartid, time.begin,
-		   time.end, time.free);
+	alt_printf("time{hartid=0x%X,begin=0x%X,end=0x%X,free=0x%X}\n",
+		   cap.time.hartid, cap.time.begin, cap.time.end,
+		   cap.time.free);
 }
 
-static void _dump_memory(struct s3k_memory mem)
+static void _dump_memory(union s3k_cap cap)
 {
-	uint64_t begin = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.begin << 12);
-	uint64_t end = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.end << 12);
-	uint64_t free = ((uint64_t)mem.offset << 27) + ((uint64_t)mem.free << 12);
-	alt_printf(
-	    "memory{begin=0x%X,end=0x%X,free=0x%x,lock=0x%X,rwx=0x%X}"
-	    "\n",
-	    begin, end, free, mem.lock, mem.rwx);
+	uint64_t begin = ((uint64_t)cap.memory.offset << 27)
+			 + ((uint64_t)cap.memory.begin << 12);
+	uint64_t end = ((uint64_t)cap.memory.offset << 27)
+		       + ((uint64_t)cap.memory.end << 12);
+	uint64_t free = ((uint64_t)cap.memory.offset << 27)
+			+ ((uint64_t)cap.memory.free << 12);
+	alt_printf("memory{begin=0x%X,end=0x%X,free=0x%x,lock=0x%X,rwx=0x%X}"
+		   "\n",
+		   begin, end, free, cap.memory.lock, cap.memory.rwx);
 }
 
-static void _dump_pmp(struct s3k_pmp pmp)
+static void _dump_pmp(union s3k_cap cap)
 {
-	uint64_t begin = s3k_pmp_napot_begin(pmp.addr);
-	uint64_t end = s3k_pmp_napot_end(pmp.addr);
-	uint64_t rwx = pmp.cfg & 0x7;
+	uint64_t begin = s3k_pmp_napot_begin(cap.pmp.addr);
+	uint64_t end = s3k_pmp_napot_end(cap.pmp.addr);
+	uint64_t rwx = cap.pmp.cfg & 0x7;
 	alt_printf("pmp{begin=0x%X,end=0x%X,rwx=0x%X}\n", begin, end, rwx);
 }
 
-static void _dump_monitor(struct s3k_monitor mon)
+static void _dump_monitor(union s3k_cap cap)
 {
-	alt_printf("monitor{begin=0x%X,end=0x%X,free=0x%X}\n", mon.begin, mon.end, mon.free);
+	alt_printf("monitor{begin=0x%X,end=0x%X,free=0x%X}\n",
+		   cap.monitor.begin, cap.monitor.end, cap.monitor.free);
 }
 
-static void _dump_channel(struct s3k_channel chan)
+static void _dump_channel(union s3k_cap cap)
 {
-	alt_printf("channel{begin=0x%X,end=0x%X,free=0x%X}\n", chan.begin, chan.end, chan.free);
+	alt_printf("channel{begin=0x%X,end=0x%X,free=0x%X}\n",
+		   cap.channel.begin, cap.channel.end, cap.channel.free);
 }
 
 void capman_dump(union s3k_cap cap)
@@ -93,19 +98,19 @@ void capman_dump(union s3k_cap cap)
 	case S3K_CAPTY_NONE:
 		break;
 	case S3K_CAPTY_TIME:
-		_dump_time(cap.time);
+		_dump_time(cap);
 		break;
 	case S3K_CAPTY_MEMORY:
-		_dump_memory(cap.memory);
+		_dump_memory(cap);
 		break;
 	case S3K_CAPTY_PMP:
-		_dump_pmp(cap.pmp);
+		_dump_pmp(cap);
 		break;
 	case S3K_CAPTY_MONITOR:
-		_dump_monitor(cap.monitor);
+		_dump_monitor(cap);
 		break;
 	case S3K_CAPTY_CHANNEL:
-		_dump_channel(cap.channel);
+		_dump_channel(cap);
 		break;
 	default:
 		alt_printf("0x%X\n", cap.raw);
@@ -171,7 +176,8 @@ bool capman_derive_pmp(int idx, uint64_t begin, uint64_t end, uint64_t rwx)
 {
 	uint64_t addr = s3k_pmp_napot_addr(begin, end);
 	union s3k_cap pmp = s3k_pmp(addr, rwx);
-	if (begin != s3k_pmp_napot_begin(addr) || end != s3k_pmp_napot_end(addr))
+	if (begin != s3k_pmp_napot_begin(addr)
+	    || end != s3k_pmp_napot_end(addr))
 		return false;
 
 	uint64_t i = find_memory_derive(pmp);
@@ -223,8 +229,8 @@ int capman_find_monitor(uint64_t pid)
 {
 	for (int i = 0; i < NCAP; i++) {
 		if (caps[i].type == S3K_CAPTY_MONITOR) {
-			struct s3k_monitor mon = caps[i].monitor;
-			if (mon.free <= pid && pid < mon.end) {
+			union s3k_cap cap = caps[i];
+			if (cap.monitor.free <= pid && pid < cap.monitor.end) {
 				return i;
 			}
 		}

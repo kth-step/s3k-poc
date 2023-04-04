@@ -1,6 +1,3 @@
-#include <stdbool.h>
-#include <string.h>
-
 #include "../config.h"
 #include "altio.h"
 #include "base.h"
@@ -9,14 +6,17 @@
 #include "ring_buffer.h"
 #include "s3k.h"
 
-#define BOOT_PID    0
-#define MONITOR_PID 1
-#define CRYPTO_PID  2
-#define UARTPPP_PID 3
-#define APP0_PID    4
-#define APP1_PID    5
+#include <stdbool.h>
+#include <string.h>
 
-uint8_t pmpcaps[8] = {0};
+#define BOOT_PID 0
+#define MONITOR_PID 1
+#define CRYPTO_PID 2
+#define UARTPPP_PID 3
+#define APP0_PID 4
+#define APP1_PID 5
+
+uint8_t pmpcaps[8] = { 0 };
 char trapstack[4096];
 
 void traphandler(void) __attribute__((interrupt("user")));
@@ -103,7 +103,8 @@ void setup_monitor(void)
 	capman_mgivecap(MONITOR_PID, 0x1a, 0x18);
 
 	// UART access
-	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8,
+			  S3K_RW);
 	capman_mgivecap(MONITOR_PID, 0x20, 0x1);
 
 	// Set PC
@@ -130,7 +131,8 @@ void setup_crypto(void)
 	capman_mgivecap(CRYPTO_PID, 0x1b, 0x1b);
 
 	// UART access
-	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8,
+			  S3K_RW);
 	capman_mgivecap(CRYPTO_PID, 0x20, 0x1);
 
 	// Set PC
@@ -150,7 +152,8 @@ void setup_uartppp(void)
 	capman_msetreg(UARTPPP_PID, S3K_REG_PC, UARTPPP_BASE);
 	// Give uart PMP slice
 	capman_mgivecap(UARTPPP_PID, 0x20, 0x0);
-	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8, S3K_RW);
+	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8,
+			  S3K_RW);
 	capman_mgivecap(UARTPPP_PID, 0x20, 0x1);
 	// Give uart memory slice
 	capman_mgivecap(UARTPPP_PID, 0x12, 0x10);

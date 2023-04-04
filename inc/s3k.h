@@ -172,8 +172,8 @@ union s3k_cap {
 	} pmp;
 
 	struct {
-		uint64_t type : 4;    ///< Type of capability, should be
-				      ///< S3K_CAPTY_MONITOR
+		uint64_t type : 4; ///< Type of capability, should be
+				   ///< S3K_CAPTY_MONITOR
 		uint64_t unused : 12; ///< Padding, should be zero
 		uint64_t begin : 16;  ///< Beginning of monitored PIDs.
 		uint64_t free : 16; ///< Beginning of available monitored PIDs.

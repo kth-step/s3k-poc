@@ -1,8 +1,8 @@
 #pragma once
+#include "s3k.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "s3k.h"
 
 void capman_init(void);
 union s3k_cap capman_get(uint64_t idx);

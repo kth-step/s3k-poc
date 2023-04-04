@@ -1,10 +1,10 @@
-#include <stddef.h>
-#include <stdint.h>
-
 #include "altio.h"
 #include "ppp.h"
 #include "ring_buffer.h"
 #include "s3k.h"
+
+#include <stddef.h>
+#include <stdint.h>
 
 char *buffer;
 size_t buffer_size;
