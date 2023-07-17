@@ -16,7 +16,7 @@ PAYLOAD_BIN=${PAYLOAD%.elf}.bin
 
 riscv64-unknown-elf-objcopy -O binary $PAYLOAD $PAYLOAD_BIN
 
-st -e   qemu-system-riscv64 -M virt -icount 2 -smp 1 -m 128M			\
+st -e   qemu-system-riscv64 -M virt -smp 4 -m 128M			\
 	-nographic -bios none -kernel $KERNEL					\
 	-device loader,file=$PAYLOAD_BIN,addr=0x80010000			\
 	-s -S									&

@@ -2,6 +2,12 @@
 #include "altio.h"
 #include "s3k.h"
 
+#define MEM_SLICE_CIDX 0
+#define MAIN_PMP_CIDX 1
+#define UART_PMP_CIDX 2
+#define SOCKET_CIDX 3
+#define TIME_CIDX 4
+
 // Encryption key
 uint32_t enc_key[4] = {
 	0x16157e2b,
@@ -24,11 +30,8 @@ uint32_t enc_rk[44];
 uint32_t mac_rk[44];
 
 // Initialization vector
-uint32_t iv[4];
+uint32_t iv[4] = {0, 1, 2, 3};
 
-// Message buffer
-uint8_t buf[16] = { 0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
-		    0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34 };
 
 void setup(void)
 {
@@ -38,22 +41,46 @@ void setup(void)
 	s3k_yield();
 }
 
+void decrypt(uint8_t buf[16], uint8_t checksum[16])
+{
+	uint8_t mac[16];
+	// Decrypt buffer
+	aes128_dec(enc_rk, buf);
+	// Computer CBC MAC on plaintext
+	aes128_cbc_mac(mac_rk, buf, mac, 16);
+	// XOR with checksum
+	for (int i = 0; i < 16; ++i)
+		checksum[i] ^= mac[i];
+	// checksum == 0 if authentic
+}
+
+void encrypt(uint8_t buf[16], uint8_t checksum[16])
+{
+	// Compute CBC MAC on plaintext
+	aes128_cbc_mac(mac_rk, buf, checksum, 16);
+	// Encrypt plaintext
+	aes128_enc(enc_rk, buf);
+}
+
 void loop(void)
 {
-	uint64_t recv_buf[4] = { 0xa, 0xb, 0xc, 0xd };
 	uint64_t tag;
-	uint64_t start_time, end_time;
-	s3k_sendrecv(0xa, 0x9, recv_buf, -1ull, -1ull, &tag);
-	alt_printf("crypto: tag=%X msg=%X,%X,%X,%X\n", tag, recv_buf[0],
-		   recv_buf[1], recv_buf[2], recv_buf[3]);
+	// Message buffer
+	uint64_t buf[4];
+	uint64_t buf_cidx = TIME_CIDX;
+	s3k_cap_t cap;
+	while (1) {
+		// Reply and listen for monitor
+		s3k_sendrecv_cap(SOCKET_CIDX, buf, buf_cidx, &cap, &tag);
+		
+		if (tag & 1) {
+			// Odd tag => encrypt
+			encrypt((uint8_t*)buf, (uint8_t*)&buf[2]);
+		} else {
+			// Even tag => decrypt
+			decrypt((uint8_t*)buf, (uint8_t*)&buf[2]);
+		}
 
-	start_time = s3k_gettime();
-	aes128_enc(enc_rk, buf);
-	end_time = s3k_gettime();
-	alt_printf("enc_rk 0x%x\n", end_time - start_time);
-
-	start_time = s3k_gettime();
-	aes128_dec(enc_rk, buf);
-	end_time = s3k_gettime();
-	alt_printf("dec_rk 0x%x\n", end_time - start_time);
+	}
+	
 }

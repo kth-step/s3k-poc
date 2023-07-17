@@ -2,26 +2,24 @@
 #pragma once
 
 /* Number of processes. */
-#define NPROC 8
+#define NUM_OF_PROCESSES 8
 
 /* Number of capabilities per process */
-#define NCAP 64
+#define NUM_OF_CAPABILITIES 32 
 
-/* Number of time slices in a major frame. */
-#define NSLICE 64
+/* Number of minor frames in a major frame. */
+#define NUM_OF_FRAMES 32ull
 
-/* Number of ticks per quantum. */
-/* TICKS_PER_SECOND defined in platform.h */
-#define TICKS_PER_SECOND 1000000ull
-#define NTICK (TICKS_PER_SECOND / NSLICE / 10ull)
+/* Number of ticks per minor frame. */
+#define FRAME_LENGTH ((unsigned long long) (TICKS_PER_SECOND / NUM_OF_FRAMES / 10ull))
 
 /* Number of scheduler ticks. */
-#define NSLACK 100
+#define SLACK_LENGTH 10
 
 /* Number of communications channels */
-#define NCHANNEL 8
+#define NUM_OF_CHANNELS 16
 
 #define NDEBUG
 
 /* Uncomment to enable memory protection */
-// #define MEMORY_PROTECTION
+#define MEMORY_PROTECTION

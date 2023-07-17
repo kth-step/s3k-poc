@@ -1,13 +1,35 @@
+/**
+ * Splits up resources between processes.
+ * Monitor:
+ * - 0: PMP Frame for monitor executable (RWX)
+ * - 1: Memory Slice for shared memory (RW)
+ * - 2: Memory Slice for Application 0
+ * - 3: Memory Slice for Application 1
+ * - 4: Time slice on first hart
+ * - 5: Server socket for communication with crypto
+ * - 6: Server socket for communication with uartppp
+ * Crypto:
+ * - 0: 
+ */
+
 #include "../config.h"
 #include "altio.h"
-#include "base.h"
-#include "capman.h"
+#include "memory.h"
 #include "payload.h"
 #include "ring_buffer.h"
 #include "s3k.h"
 
 #include <stdbool.h>
 #include <string.h>
+
+#define MEM_CIDX 1
+#define UART_CIDX 2
+#define TIME0_CIDX 4
+#define TIME1_CIDX 5
+#define TIME2_CIDX 6
+#define TIME3_CIDX 7
+#define MONCAP_CIDX 8
+#define CHANCAP_CIDX 9
 
 #define BOOT_PID 0
 #define MONITOR_PID 1
@@ -16,226 +38,178 @@
 #define APP0_PID 4
 #define APP1_PID 5
 
-uint8_t pmpcaps[8] = { 0 };
-char trapstack[4096];
+struct memory *memory = (struct memory*)0x80000000;
 
-void traphandler(void) __attribute__((interrupt("user")));
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
-void traphandler(void)
+void setup_memory(void)
 {
-	static int pmp = 4;
-	//	uint64_t epc = s3k_getreg(S3K_REG_EPC);
-	uint64_t ecause = s3k_getreg(S3K_REG_ECAUSE);
-	uint64_t eval = s3k_getreg(S3K_REG_EVAL);
-	if (ecause == 0x7) {
-		// Try derive a pmp capability
-		uint64_t size = 0x1 << 27;
-		int i = capman_find_free();
-		while (size >= 0x1000) {
-			uint64_t begin = eval & ~(size - 1);
-			uint64_t end = begin + size;
-			if (capman_derive_pmp(i, begin, end, S3K_RW)) {
-				// If a pmp cap was found use it
-				if (pmpcaps[pmp])
-					capman_delcap(pmpcaps[pmp]);
-				pmpcaps[pmp] = i;
-				capman_setpmp(pmpcaps);
-				pmp++;
-				if (pmp == 8)
-					pmp = 4;
-				return;
-			}
-			size >>= 1;
-		}
-	}
+	// Base and size of segments.
+	uint64_t monitor_base = (uint64_t)memory->monitor;
+	uint64_t monitor_size = ARRAY_SIZE(memory->monitor);
+	uint64_t crypto_base = (uint64_t)memory->crypto;
+	uint64_t crypto_size = ARRAY_SIZE(memory->crypto);
+	uint64_t uartppp_base = (uint64_t)memory->uartppp;
+	uint64_t uartppp_size = ARRAY_SIZE(memory->uartppp);
+	uint64_t app0_base = (uint64_t)memory->app0;
+	uint64_t app0_size = ARRAY_SIZE(memory->app0);
+	uint64_t app1_base = (uint64_t)memory->app1;
+	uint64_t app1_size = ARRAY_SIZE(memory->app1);
+	uint64_t shared_base = (uint64_t)memory->shared;
+	uint64_t shared_size = ARRAY_SIZE(memory->shared);
+
+	// Base and size of segments.
+	s3k_cap_t monitor_mem = s3k_mkmemory(monitor_base >> 12, monitor_size >> 12, S3K_RWX);
+	s3k_cap_t crypto_mem = s3k_mkmemory(crypto_base >> 12, crypto_size >> 12, S3K_RWX);
+	s3k_cap_t uartppp_mem = s3k_mkmemory(uartppp_base >> 12, uartppp_size >> 12, S3K_RWX);
+	s3k_cap_t app0_mem = s3k_mkmemory(app0_base >> 12, app0_size >> 12, S3K_RWX);
+	s3k_cap_t app1_mem = s3k_mkmemory(app1_base >> 12, app1_size >> 12, S3K_RWX);
+	s3k_cap_t shared_mem = s3k_mkmemory(shared_base >> 12, shared_size >> 12, S3K_RW);
+
+	// PMP Frames for monitor, crypto, uartppp, and uart
+	uint64_t monitor_addr = s3k_napot_encode(monitor_base, monitor_size);
+	uint64_t crypto_addr = s3k_napot_encode(crypto_base, crypto_size);
+	uint64_t uartppp_addr = s3k_napot_encode(uartppp_base, uartppp_size);
+	uint64_t uart_addr = 0x40001ff;
+	s3k_cap_t monitor_pmp = s3k_mkpmp(monitor_addr, S3K_RWX);
+	s3k_cap_t crypto_pmp = s3k_mkpmp(crypto_addr, S3K_RWX);
+	s3k_cap_t uartppp_pmp = s3k_mkpmp(uartppp_addr, S3K_RWX);
+	s3k_cap_t uart_pmp = s3k_mkpmp(uart_addr, S3K_RW);
+
+	// Setup monitor memory
+	s3k_drvcap(MEM_CIDX, 16, monitor_mem);
+	s3k_drvcap(16, 17, monitor_pmp);
+	s3k_drvcap(UART_CIDX, 18, uart_pmp);
+	s3k_pmpset(17, 2);
+	memcpy((void*)monitor_base, monitor_bin, monitor_bin_len);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 16, 0);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 17, 1);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 18, 2);
+	// Set monitor PC
+	s3k_msetreg(MONCAP_CIDX, MONITOR_PID, S3K_REG_PC, monitor_base);
+	// Set monitor PMP
+	s3k_mpmpset(MONCAP_CIDX, MONITOR_PID, 1, 0);
+	s3k_mpmpset(MONCAP_CIDX, MONITOR_PID, 2, 1);
+
+	// Setup crypto memory
+	s3k_drvcap(MEM_CIDX, 16, crypto_mem);
+	s3k_drvcap(16, 17, crypto_pmp);
+	s3k_drvcap(UART_CIDX, 18, uart_pmp);
+	s3k_pmpset(17, 2);
+	memcpy((void*)crypto_base, crypto_bin, crypto_bin_len);
+	s3k_mgivecap(MONCAP_CIDX, CRYPTO_PID, 16, 0);
+	s3k_mgivecap(MONCAP_CIDX, CRYPTO_PID, 17, 1);
+	s3k_mgivecap(MONCAP_CIDX, CRYPTO_PID, 18, 2);
+	// Set monitor PC
+	s3k_msetreg(MONCAP_CIDX, CRYPTO_PID, S3K_REG_PC, crypto_base);
+	// Set monitor PMP
+	s3k_mpmpset(MONCAP_CIDX, CRYPTO_PID, 1, 0);
+	s3k_mpmpset(MONCAP_CIDX, CRYPTO_PID, 2, 1);
+
+	// Setup uartppp memory
+	s3k_drvcap(MEM_CIDX, 16, uartppp_mem);
+	s3k_drvcap(16, 17, uartppp_pmp);
+	s3k_drvcap(UART_CIDX, 18, uart_pmp);
+	s3k_pmpset(17, 2);
+	memcpy((void*)uartppp_base, uartppp_bin, uartppp_bin_len);
+	s3k_mgivecap(MONCAP_CIDX, UARTPPP_PID, 16, 0);
+	s3k_mgivecap(MONCAP_CIDX, UARTPPP_PID, 17, 1);
+	s3k_mgivecap(MONCAP_CIDX, UARTPPP_PID, 18, 2);
+	// Set monitor PC
+	s3k_msetreg(MONCAP_CIDX, UARTPPP_PID, S3K_REG_PC, uartppp_base);
+	// Set monitor PMP
+	s3k_mpmpset(MONCAP_CIDX, UARTPPP_PID, 1, 0);
+	s3k_mpmpset(MONCAP_CIDX, UARTPPP_PID, 2, 1);
+
+	// Give monitor app0, app1, and shared memory.
+	s3k_drvcap(MEM_CIDX, 16, app0_mem);
+	s3k_drvcap(MEM_CIDX, 17, app1_mem);
+	s3k_drvcap(MEM_CIDX, 18, shared_mem);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 16, 3);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 17, 4);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 18, 5);
 }
 
-void setup_memory_slices(void)
+void setup_ipc(void)
 {
-	// Monitor slice
-	capman_derive_mem(0x10, MONITOR_BASE, MONITOR_BASE + 0x4000, S3K_RWX);
-	// Crypto slice
-	capman_derive_mem(0x11, CRYPTO_BASE, CRYPTO_BASE + 0x4000, S3K_RWX);
-	// Uart PPP slice
-	capman_derive_mem(0x12, UARTPPP_BASE, UARTPPP_BASE + 0x4000, S3K_RWX);
-	// Application slice
-	capman_derive_mem(0x13, APP0_BASE, SHARED_BASE, S3K_RWX);
-	// Shared memory slice
-	capman_derive_mem(0x14, SHARED_BASE, SHARED_BASE + 0x10000, S3K_RW);
-	// Delete remainder
-	capman_delcap(0x1);
+	/// Socket definitions.
+	// MONITOR <-> UART
+	// CRYPTO <-> MONITOR
+	s3k_cap_t channel0_server = s3k_mksocket(0, 0);
+	s3k_cap_t channel1_server = s3k_mksocket(1, 0);
+	s3k_cap_t channel0_client = s3k_mksocket(0, 1);
+	s3k_cap_t channel1_client1 = s3k_mksocket(1, 1);
+	s3k_cap_t channel1_client2 = s3k_mksocket(1, 2);
+
+	// Derive sockets
+	s3k_drvcap(CHANCAP_CIDX, 16, channel0_server);
+	s3k_drvcap(16, 17, channel0_client);
+	s3k_drvcap(CHANCAP_CIDX, 18, channel1_server);
+	s3k_drvcap(18, 19, channel1_client1);
+	s3k_drvcap(18, 20, channel1_client2);
+
+	// Hand out sockets.
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 16, 6);
+	s3k_mgivecap(MONCAP_CIDX, UARTPPP_PID, 17, 3);
+	s3k_mgivecap(MONCAP_CIDX, CRYPTO_PID, 18, 3);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 19, 7);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 20, 8);
 }
 
-void setup_time_slices(void)
+void setup_monitoring(void)
 {
-	uint64_t hartid = 0;
-	// UART
-	capman_derive_time(0x18, hartid, 0, 8);
-	// CRYPTO
-	capman_derive_time(0x19, hartid, 8, 16);
-	// MONITOR
-	capman_derive_time(0x1a, hartid, 16, 48);
-	// CRYPTO
-	capman_derive_time(0x1b, hartid, 48, 56);
-	// UART
-	capman_derive_time(0x1c, hartid, 56, 64);
-	// Temporary time slice for bootloader
-	capman_derive_time(0x1d, hartid, 16, 32);
+	// Give monitor monitoring capability over APP0 and APP1
+	s3k_cap_t tmp = s3k_mkmonitor(0, APP0_PID);
+	s3k_cap_t monitor_app0_app1 = s3k_mkmonitor(APP0_PID, 2);
+	
+	s3k_drvcap(MONCAP_CIDX, 16, tmp);
+	s3k_drvcap(MONCAP_CIDX, 17, monitor_app0_app1);
+	s3k_delcap(MONCAP_CIDX);
+	s3k_movcap(16, MONCAP_CIDX);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 17, 9);
 }
 
-void setup_monitor(void)
+void setup_time(void)
 {
-	// Copy over monitor binary
-	capman_derive_pmp(0x20, MONITOR_BASE, MONITOR_BASE + 0x4000, S3K_RWX);
-	pmpcaps[1] = 0x20;
-	capman_setpmp(pmpcaps);
-	memcpy((void *)MONITOR_BASE, monitor_bin, monitor_bin_len);
+	s3k_mresume(MONCAP_CIDX, MONITOR_PID);
+	s3k_mresume(MONCAP_CIDX, CRYPTO_PID);
+	s3k_mresume(MONCAP_CIDX, UARTPPP_PID);
+	
+	s3k_cap_t uartppp_time = s3k_mktime(0, 0, 4);
+	s3k_cap_t monitor_time = s3k_mktime(0, 4, 28);
+	s3k_cap_t crypto_time = s3k_mktime(0, 4, 14);
 
-	// *** Give resources
-	capman_msetreg(MONITOR_PID, S3K_REG_PC, MONITOR_BASE);
-	// Give monitor PMP slice
-	capman_mgivecap(MONITOR_PID, 0x20, 0x0);
-	// Give monitor memory slice
-	capman_mgivecap(MONITOR_PID, 0x10, 0x10);
-	// Give application memory slice
-	capman_mgivecap(MONITOR_PID, 0x13, 0x11);
-	// Give monitor time slice
-	capman_mgivecap(MONITOR_PID, 0x1a, 0x18);
+	s3k_drvcap(TIME0_CIDX, 16, uartppp_time);
+	s3k_drvcap(TIME0_CIDX, 17, monitor_time);
+	s3k_drvcap(17, 18, crypto_time);
+	s3k_delcap(TIME0_CIDX);
 
-	// UART access
-	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8,
-			  S3K_RW);
-	capman_mgivecap(MONITOR_PID, 0x20, 0x1);
-
-	// Set PC
-	capman_msetreg(MONITOR_PID, S3K_REG_PC, MONITOR_BASE);
-	capman_msetreg(MONITOR_PID, S3K_REG_PMP, 0x0100);
-}
-
-void setup_crypto(void)
-{
-	// Copy over crypto binary
-	capman_derive_pmp(0x20, CRYPTO_BASE, CRYPTO_BASE + 0x4000, S3K_RWX);
-	pmpcaps[1] = 0x20;
-	capman_setpmp(pmpcaps);
-	memcpy((void *)CRYPTO_BASE, crypto_bin, crypto_bin_len);
-
-	// *** Give resources
-	capman_msetreg(CRYPTO_PID, S3K_REG_PC, CRYPTO_BASE);
-	// Give crypto PMP slice
-	capman_mgivecap(CRYPTO_PID, 0x20, 0x0);
-	// Give crypto memory slice
-	capman_mgivecap(CRYPTO_PID, 0x11, 0x10);
-	// Give crypto time slices
-	capman_mgivecap(CRYPTO_PID, 0x19, 0x19);
-	capman_mgivecap(CRYPTO_PID, 0x1b, 0x1b);
-
-	// UART access
-	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8,
-			  S3K_RW);
-	capman_mgivecap(CRYPTO_PID, 0x20, 0x1);
-
-	// Set PC
-	capman_msetreg(CRYPTO_PID, S3K_REG_PC, CRYPTO_BASE);
-	capman_msetreg(CRYPTO_PID, S3K_REG_PMP, 0x0100);
-}
-
-void setup_uartppp(void)
-{
-	// Copy over monitor binary
-	capman_derive_pmp(0x20, UARTPPP_BASE, UARTPPP_BASE + 0x4000, S3K_RWX);
-	pmpcaps[1] = 0x20;
-	capman_setpmp(pmpcaps);
-	memcpy((void *)UARTPPP_BASE, uartppp_bin, uartppp_bin_len);
-
-	// *** Give resources
-	capman_msetreg(UARTPPP_PID, S3K_REG_PC, UARTPPP_BASE);
-	// Give uart PMP slice
-	capman_mgivecap(UARTPPP_PID, 0x20, 0x0);
-	capman_derive_pmp(0x20, (uint64_t)UART_BASE, (uint64_t)UART_BASE + 0x8,
-			  S3K_RW);
-	capman_mgivecap(UARTPPP_PID, 0x20, 0x1);
-	// Give uart memory slice
-	capman_mgivecap(UARTPPP_PID, 0x12, 0x10);
-	// Give uart time slices
-	capman_mgivecap(UARTPPP_PID, 0x18, 0x19);
-	capman_mgivecap(UARTPPP_PID, 0x1c, 0x1b);
-
-	// Set PC
-	capman_msetreg(UARTPPP_PID, S3K_REG_PC, UARTPPP_BASE);
-	capman_msetreg(UARTPPP_PID, S3K_REG_PMP, 0x0100);
+	s3k_mgivecap(MONCAP_CIDX, UARTPPP_PID, 16, 4);
+	s3k_mgivecap(MONCAP_CIDX, MONITOR_PID, 17, 10);
+	s3k_mgivecap(MONCAP_CIDX, CRYPTO_PID, 18, 4);
 }
 
 void setup(void)
 {
-	s3k_delcap(4);
-	s3k_delcap(5);
-	s3k_delcap(6);
+	// Delete time cap for harts 1,2,3.
+	s3k_delcap(TIME1_CIDX);
+	s3k_delcap(TIME2_CIDX);
+	s3k_delcap(TIME3_CIDX);
 
-	// Setup trap handler
-	s3k_setreg(S3K_REG_TPC, (uint64_t)traphandler);
-	s3k_setreg(S3K_REG_TSP, (uint64_t)trapstack + sizeof(trapstack));
+	// Setup UART
+	s3k_cap_t uart_pmp = s3k_mkpmp(0x40001ff, S3K_RW);
+	s3k_drvcap(UART_CIDX, 15, uart_pmp);
+	s3k_pmpset(15, 1);
 
-	// Initialize capman
-	capman_init();
-
-	// We can now print stuff
-	alt_puts("\nboot: Setting up.");
-
-	alt_puts("\ntesting alt_printf");
-	alt_puts("------------------");
-	alt_printf("plain: hello, world\n");
-	alt_printf("char %%c: %c\n", 'A');
-	alt_printf("string %%s: %s\n", "hello, world");
-	alt_printf("4B hex %%x: 0x%x\n", 0xDEADBEEF);
-	alt_printf("8B hex %%X: 0x%X\n", 0xcafedeadbeefull);
-	alt_puts("------------------");
-
-	setup_memory_slices();
-	setup_time_slices();
-	setup_monitor();
-	setup_crypto();
-	setup_uartppp();
-
-	alt_puts("\nboot: Setup complete.");
-
-	for (int i = 0; i < NPROC; ++i) {
-		alt_printf("\nboot: proc 0x%x capabilities\n", i);
-		alt_puts("------------------");
-		for (int j = 0; j < NCAP; ++j) {
-			union s3k_cap cap;
-			if (i) {
-				s3k_mgetcap(0x7, i, j, &cap);
-			} else {
-				cap = s3k_getcap(j);
-			}
-			if (cap.raw == 0)
-				continue;
-			alt_printf("0x%x: ", j);
-			capman_dump(cap);
-		}
-		alt_puts("------------------");
-	}
-	s3k_yield();
-
-	// Create capabilities for IPC
-	s3k_drvcap(0x8, 0x9, s3k_socket(0, 0));
-	s3k_drvcap(0x9, 0xa, s3k_socket(0, 1));
-	s3k_mgivecap(0x7, CRYPTO_PID, 0x9, 0x9);
-	s3k_mgivecap(0x7, MONITOR_PID, 0xa, 0xa);
-	s3k_drvcap(0x8, 0x9, s3k_socket(1, 0));
-	s3k_drvcap(0x9, 0xa, s3k_socket(1, 1));
-	s3k_mgivecap(0x7, MONITOR_PID, 0x9, 0x9);
-	s3k_mgivecap(0x7, CRYPTO_PID, 0xa, 0xa);
-
-	capman_mresume(UARTPPP_PID);
-	capman_mresume(CRYPTO_PID);
-	capman_mresume(MONITOR_PID);
-	s3k_yield();
+	alt_puts("entry boot setup");
+	setup_memory();
+	setup_ipc();
+	setup_monitoring();
+	setup_time();
+	alt_puts("exit boot setup");
 }
 
 void loop(void)
 {
-	alt_putstr(".");
-	s3k_yield();
+	while(1);
 }

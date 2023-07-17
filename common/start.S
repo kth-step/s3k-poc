@@ -8,7 +8,7 @@ _start:
 .option norelax
 	lla	gp,__global_pointer$
 .option pop
-	lla	sp,_stack_top
+	lla	sp,_sp
 
 	lla	t0,_bss
 	lla	t1,_ebss
@@ -22,8 +22,3 @@ _start:
 	call	setup
 	lla	ra,loop
 	tail	loop
-
-.section .stack
-_stack:
-.fill 2048
-_stack_top:

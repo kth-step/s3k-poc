@@ -6,26 +6,37 @@
 #include <stddef.h>
 #include <stdint.h>
 
-char *buffer;
-size_t buffer_size;
-
-const char *msg_ready = "uart_ready";
-const char *msg_long = "frame too long";
-
-size_t strlen(const char *s)
-{
-	size_t len = 0;
-	while (s[len] != '\0')
-		len++;
-	return len;
-}
+uint64_t buf[4] = {0,0,0,0};
 
 void setup(char *_buf, size_t _size)
 {
 	alt_puts("setup uart");
 }
 
+void recv_msg(uint8_t buf[32])
+{
+	for(int i = 0; i < 32; i++)
+		buf[i] = i + 1;
+}
+
+void send_msg(uint8_t buf[32])
+{
+	for(int i = 0; i < 32; ++i)
+		alt_putchar(buf[i]);
+}
+
 void loop(void)
 {
-	s3k_yield();
+	uint64_t tag;
+
+	// Receive a message.
+	recv_msg((uint8_t*)buf);
+
+	// Send message to monitor and get response
+	while (s3k_sendrecv(3, buf, &tag)) {
+	}
+
+	// Send a message if non-zero response
+	if (buf[0] | buf[1] | buf[2] | buf[3])
+		send_msg((uint8_t*)buf);
 }

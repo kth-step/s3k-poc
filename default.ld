@@ -3,7 +3,6 @@ OUTPUT_ARCH("riscv")
 ENTRY(_start)
 
 _uart = 0x10000000;
-PROVIDE(_uart = 0x10000000);
 
 SECTIONS {
         .text : ALIGN(4K) {
@@ -31,7 +30,8 @@ SECTIONS {
         }
 
 	.stack : ALIGN(8) {
-		*(.stack .stack.*)
+		. += 2048;
+		_sp = .;
 	}
 	_end = .;
 
