@@ -1,4 +1,6 @@
-main.pdf
+*.pdf
+*.ps
+*.dvi
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof

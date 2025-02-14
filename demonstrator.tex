@@ -22,12 +22,12 @@
 
 	\newpage
 	\section*{Demonstrator 1: Military Avionics Systems}
-	Our military avionics systems feature advanced communication capabilities and a fly-by-wire jet fighter configuration with multiple redundant computers to enhance reliability and safety. 
+	Our military avionics systems is a jet fighter with advanced communication capabilities and multiple redundant computers to enhance reliability and safety. 
 	To optimize space, weight, and power (SWaP), multiple components are integrated into a single electronic control unit (ECU).
 
 	\paragraph{Components}
 	Our aircraft includes the following key components:
-	\begin{enumerate}[label=C\arabic*)]
+	\begin{enumerate}[label=P\arabic*)]
 		\item Flight Control System (FCS): Interprets pilot inputs and controls the aircraft's flight surfaces, ensuring stable and responsive flight.
 		\item Propulsion and Fuel System: Manages the aircraft's engines, fuel tanks, pumps, and other related components to optimize performance and efficiency.
 		\item Communication Systems: Includes various types of radios for civil, domestic military, and international military communications, ensuring secure and reliable communication.
@@ -41,7 +41,7 @@
 
 	\paragraph{Component Timing Constraints}
 	The following timing constraints are critical for the optimal performance of our components:
-	\begin{enumerate}[label=C\arabic*)]
+	\begin{enumerate}[label=T\arabic*)]
 		\item Flight Control System (FCS): Must process pilot inputs and adjust flight surfaces within 10-50 ms.
 		\item Propulsion and Fuel System: Adjust engine and fuel parameters within 50-200 ms.
 		\item Communication Systems: Maximum 50-100 ms latency for message transmission; 100-500 ms latency for ground station communication.
@@ -151,4 +151,45 @@
 					This allows for a greater flexibility in system design as we can chose more components to integrate into our system.
 			\end{itemize}
 	\end{itemize}
+
+	\newpage
+	\section*{Demonstrator 2: Reconnaissance Drone}
+	Our Reconnaissance Drone features advanced communication capabilities and a specialized configuration with multiple redundant computers to enhance reliability and safety. 
+	To optimize space, weight, and power (SWaP), multiple components are integrated into a single electronic control unit (ECU).
+
+	\paragraph{Components}
+	Our aircraft includes the following key components:
+	\begin{enumerate}[label=P\arabic*)]
+		\item Flight Control System (FCS): Interprets control inputs to adjust the aircraft's flight surfaces.
+		\item Propulsion and Fuel System: Manages the aircraft's engines, fuel tanks, pumps, and other related components to optimize performance and efficiency.
+		\item Autonomous System: Processes sensor data and commands to make decisions on flight path and intelligence gathering, enabling autonomous operation.
+		\item Communication Systems: For communicating with a ground station to receive general commands.
+		\item Navigation Systems: Utilizes Global Navigation Satellite System (GNSS) and Inertial Navigation System (INS) for precise positioning and navigation.
+		\item Intelligence, Surveillance, and Reconnaissance (ISR): Signals Intelligence (SIGINT), Electronic Intelligence (ELINT), and Infrared (IR) systems for comprehensive intelligence gathering.
+		\item Power System: Provides and manages electrical power to various parts of the aircraft, including generators and batteries, to support all onboard systems.
+	\end{enumerate}
+
+	\paragraph{Component Timing Constraints}
+	The following timing constraints are critical for the optimal performance of our components:
+	\begin{enumerate}[label=T\arabic*)]
+		\item Flight Control System (FCS): Must process control inputs and adjust flight surfaces within 10-50 ms.
+		\item Propulsion and Fuel System: Adjust engine and fuel parameters within 50-200 ms.
+		\item Autonomous System: Requires a 200 ms latency for decision-making to ensure timely and accurate autonomous operations.
+		\item Communication Systems: 100-200 ms latency for ground station communication.
+		\item Navigation Systems: Provide position updates at intervals of 100-200 ms.
+		\item ISR Systems: Process SIGINT and ELINT data within 50-100 ms.
+		\item Power System: Manage power distribution to critical systems in real-time, with adjustments made within 50-100 ms.
+	\end{enumerate}
+
+	\paragraph{Component Criticality}
+	The criticality of each component is classified as follows:
+	\begin{enumerate}[label=C\arabic*)]
+		\item Flight Control System (FCS): Hard real-time. Missing a deadline could lead to loss of control and potential crashes.
+		\item Propulsion and Fuel System: Hard real-time. Missing a deadline can lead to engine failure or inefficient fuel distribution.
+		\item Autonomous System: Hard real-time. Missing a deadline may lead to a crash or failure in autonomous operations, making it essential for reliable autonomous flight.
+		\item Communication Systems: Soft real-time for general communication. Firm real-time during critical phases.
+		\item Navigation Systems: Firm real-time. Occasional delays may degrade positioning accuracy but do not cause system failure.
+		\item ISR Systems: Soft real-time. Delays in processing sensor data may degrade intelligence quality but do not compromise safety.
+		\item Power System: Hard real-time.
+	\end{enumerate}
 \end{document}
