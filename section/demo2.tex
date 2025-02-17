@@ -1,6 +1,6 @@
 \newpage
 \section{Demo: Autonomous Reconnaissance Drone}
-Our autonomous reconnaissance drone features advanced communication capabilities and a specialized configuration with multiple redundant computers to enhance reliability and safety. 
+Our autonomous reconnaissance drone features advanced communication capabilities and a specialized configuration with multiple redundant computers \todo{we do not have multiple redudant computers} to enhance reliability and safety. 
 To optimize space, weight, and power (SWaP), multiple components are integrated into a single electronic control unit (ECU).
 
 \subsection{Components}
@@ -8,13 +8,17 @@ Our aircraft includes the following key components:
 \begin{enumerate}[label=P\arabic*)]
 	\item Flight Control System: 
 		Interprets control inputs to adjust the aircraft's flight surfaces, engine, fuel and energy systems.
-	\item Autonomous System: Processes sensor data and commands to make decisions on flight path and intelligence gathering, enabling autonomous operation.
-	\item Communication Systems: For communicating with a ground station to receive general commands.
-	\item Navigation and Positioning Systems: Utilizes Global Navigation Satellite System (GNSS) and Inertial Navigation System (INS) for precise positioning and navigation.
-	\item Intelligence, Surveillance, and Reconnaissance (ISR) System: Signals Intelligence (SIGINT), Electronic Intelligence (ELINT), and Infrared (IR) systems for comprehensive intelligence gathering.
+	\item Autonomous System: 
+		Processes sensor data and commands to make decisions on flight path and intelligence gathering, enabling autonomous operation.
+	\item Communication Systems: 
+		For communicating with a ground station to receive general commands.
+	\item Navigation and Positioning Systems: 
+		Utilizes Global Navigation Satellite System (GNSS) and Inertial Navigation System (INS) for precise positioning and navigation.
+	\item Intelligence, Surveillance, and Reconnaissance (ISR) System: 
+		Signals Intelligence (SIGINT), Electronic Intelligence (ELINT), and Infrared (IR) systems for comprehensive intelligence gathering.
 \end{enumerate}
 
-In Table \ref{tbl:drone}, we have the timing constraints and criticalities of the components summerized.
+In Table \ref{tbl:drone}, we have the timing constraints and criticalities of the components summarized.
 
 \begin{figure}[ht]
 	\centering
@@ -22,9 +26,9 @@ In Table \ref{tbl:drone}, we have the timing constraints and criticalities of th
 		Component & Max Latency & WCET & Criticality \\\hline
 		Flight Control System & 50 ms & 5 ms & Hard real-time \\
 		Autonomous System & 200 ms & 50 ms & Hard real-time \\
-		Communication System & 200 ms & 30 ms & Hard/Firm real-time \\
-		Nav.\ \& Pos.\ System & 200 ms & 40 ms & Firm real-time \\
-		ISR system & 100 ms & 20 ms & Soft real-time \\
+		Communication System & 200 ms & 10 ms & Hard/Firm real-time \\
+		Nav.\ \& Pos.\ System & 200 ms & 20 ms & Firm real-time \\
+		ISR system & 100 ms & 10 ms & Soft real-time \\
 	\end{tabular}
 	\caption{Timing Constraints and Criticality of Components}
 	\label{tbl:drone}
@@ -97,7 +101,7 @@ In Table \ref{tbl:drone}, we have the timing constraints and criticalities of th
 			\item Mixed Scheduling: 
 				S3K allows for the separation of tasks of different criticality into different partitions. 
 				For instance, critical functions like Flight Control can be statically scheduled to ensure they meet their hard deadlines.
-				Less critical systems, such as communication and navigation, can be grouped into partitions using soft or firm real-time schedulers, optimizing resource usage while ensuring that critical tasks are prioritized.
+				Less critical systems, such as communication and navigation, can be grouped into partitions using soft or firm real-time schedulers, optimizing resource usage while ensuring that critical tasks are completed.
 		\end{itemize}
 	\item Information Security.
 		\begin{itemize}
@@ -122,20 +126,22 @@ The system features a system monitor that oversees the overall allocation of res
 Each component, in turn, has its own monitor that manages resource distribution to its subcomponents.
 
 This hierarchical resource delegation enables a modular approach to system design and implementation. 
-The system monitor allocates sufficient resources to component monitors, which then handle more detailed resource management. 
-This structure allows for the addition, removal, and toggling of components and resources via the system monitor implemented to follow a simple policy regarding minimal resource constraints. 
-The specifics of resource management are handled at the component level.
-
-This modular, approach allows us to integrate components seamlessly. 
-The system monitor only needs to know their minimum resource requirements and the scheduling constraints, enabling efficient and secure integration.
+The system monitor is designed to allocates sufficient resources to components, these components then have monitors which then handle more detailed resource management internally. 
+This approach ensure that the system monitor only needs to know their minimum resource requirements and the scheduling constraints.
 
 We have the following components:
 \begin{itemize}
-	\item Autonomy Component ($A$): Checks the system state, mission parameters and more. Sends directives to relevant components.
-	\item Flight Control Component ($F$): Flight Control, Propulsion, Fuel, and Power systems.
-	\item Navigation and Positioning Component ($N$): Navigation system using GNSS, INS, or CNS. 
-	\item Communication Component ($C$): Communication system using satallite, radio, WiFi, and more.
-	\item ISR Component ($R$): A third-party ISR system.
+	\item Autonomy Component ($A$): 
+		Checks the system state, mission parameters and more. 
+		Sends directives to relevant components.
+	\item Flight Control Component ($F$): 
+		Flight Control, Propulsion, Fuel, and Power systems.
+	\item Navigation and Positioning Component ($N$): 
+		Navigation system using GNSS, INS, or CNS. 
+	\item Communication Component ($C$): 
+		Communication system using satellite, radio, WiFi, and more.
+	\item ISR Component ($R$): 
+		A third-party ISR system.
 \end{itemize}
 \todo{Object detection component?}
 
@@ -143,55 +149,69 @@ We have the following components:
 \begin{description}
 	\item[System monitor.] Hard real-time scheduling.
 		\begin{itemize}
+			\item Scheduled for at least 20 ms every 200 ms.
 			\item Always scheduled to receive directives from autonomous, communication or flight control system. Distributes timing resources according to directives.
 			\item Implements a policy that constrains how resources may be distributed.
 			\item When the monitor changes the schedule of a component, or enables a component, then the monitor yields to the component's monitor.
 		\end{itemize}
-	\item[Autonomy component.] Toggled hard real-time scheduling.
+	\item[Autonomy component.] Hard real-time scheduling.
 		\begin{itemize}
-			\item System monitor may disable this component if the drone is remotely controlled.
-			\item If remote connection is lost, the system monitor schedules the autonomy component.
-			\item When enabled, the autonomy component require a minimum amount of execution time to meet its deadlines. More execution time can be provided to improve performance.
+			\item Scheduled for at least 50 ms every 200 ms.
+			\item System monitor may disable this component if the drone has landed.
+			\item This component receives data from every component in order to decide how the system should behave next. 
+
+				Changes in resource distribution is sent as commands to the system monitor.
 		\end{itemize}
-	\item[Flight Control Component.] Toggled hard real-time scheduling.
+	\item[Flight Control Component.] Hard real-time scheduling. 
 		\begin{itemize}
+			\item Scheduled for at least 5 ms every 50 ms when activated.
 			\item Always scheduled statically when in-flight.
 			\item System monitor may disable this component when the drone is on the ground.
-			\item May send directive to system monitor to indicate an emergency situation (loss of power, fuel, malfunction), requiring a different scheduling.
+			\item May send directive to system monitor to indicate an emergency situation (loss of power, fuel, malfunction), changing the resource policy of the system monitor.
 		\end{itemize}
-	\item[Communication Component.] Toggled firm or hard real-time scheduling.
+	\item[Communication Component.] Firm or hard real-time scheduling.
 		\begin{itemize}
+			\item Scheduled for at least 10 ms every 200 ms when activated.
 			\item This component may be disabled when communications are being jammed, or when the drone goes into a stealth mode.
-			\item When this component is disabled, the autonomy component must be enabled.
 		\end{itemize}
-	\item[Navigation Component.] Firm real-time scheduling.
+	\item[Navigation Component.] Firm real-time scheduling. 
 		\begin{itemize}
+			\item Scheduled for at least 20 ms every 200 ms when activated.
 			\item In a stealth mode, the component may use inertial and celestial navigation.
 			\item System monitor may add or remove execution time from this component. When this occurs, the system monitor notifies the navigation monitor.
 		\end{itemize}
-	\item [ISR Component.] Soft real-time component. Best-effort scheduling.
+	\item [ISR Component.] Soft real-time component. Best-effort scheduling. 
 		\begin{itemize}
+			\item Scheduled for at least 10 ms every 100 ms when activated.
 			\item A third-party component. We do not know the exact details of how it works.
 		\end{itemize}
 \end{description}
+
+In Figure \ref{tbl:drone:sched}, we have an example schedule for the drone where all components have been scheduled. 
+Depending on the system's mode or priorities, 
 
 \begin{figure}
 	\centering
 	\begin{tabular}{c | c }
 		Slots & Component \\\hline
 		0-20 & System Monitor (1) \\
-		20-40 & ISR (2) \\
+		20-40 & ISR* (2) \\
 		40-45 & FCS (1) \\
 		45-85 & Autonomous (1) \\
 		90-95 & FCS (2) \\
 		95-100 & Autonomous (1) \\
-		100-120 & Comm (1) \\
-		120-140 & ISR (2) \\
+		100-120 & Comm* (1) \\
+		120-140 & ISR* (2) \\
 		140-145 & FCS (3) \\
-		145-155 & Comm (1) \\
-		155-190 & Nav (1) \\
+		145-155 & Comm* (1) \\
+		155-190 & Nav* (1) \\
 		190-195 & FCS (4) \\
-		195-200 & Nav (1) \\
+		195-200 & Nav* (1) \\
 	\end{tabular}
-	\caption{Scheduling of Drone. A major frame consists of 200 slots. Each slot represents 1 ms. One major frame represents 200 ms of execution time.}
+	\caption{Scheduling of Drone. 
+	A major frame consists of 200 slots. 
+	Each slot represents 1 ms. 
+	One major frame represents 200 ms of execution time. 
+	Components marked with asterisk (*) are overscheduled, meaning that they have more execution time than necessary, however, this increases their performance.}
+	\label{tbl:drone:sched}
 \end{figure}
