@@ -1,0 +1,132 @@
+\newpage
+\section{Demo: Fighter Jet}
+Our figther jet has advanced communication capabilities and multiple redundant computers to enhance reliability and safety. 
+To optimize space, weight, and power (SWaP), multiple components are integrated into a single electronic control unit (ECU).
+
+\subsection{Components}
+Our aircraft includes the following key components:
+\begin{enumerate}[label=P\arabic*)]
+	\item Flight Control System (FCS): Interprets pilot inputs and controls the aircraft's flight surfaces, ensuring stable and responsive flight.
+	\item Propulsion and Fuel System: Manages the aircraft's engines, fuel tanks, pumps, and other related components to optimize performance and efficiency.
+	\item Communication Systems: Includes various types of radios for civil, domestic military, and international military communications, ensuring secure and reliable communication.
+	\item Navigation Systems: Utilizes Global Navigation Satellite System (GNSS) and Inertial Navigation System (INS) for precise positioning and navigation.
+	\item Intelligence, Surveillance, and Reconnaissance (ISR): Comprises radar, Signals Intelligence (SIGINT), Electronic Intelligence (ELINT), and Infrared (IR) systems for comprehensive situational awareness and threat detection.
+	\item Weapons and Defensive Systems: Includes offensive weapons and defensive countermeasures to enhance mission effectiveness and survivability.
+	\item Life Support System: Ensures the safety and comfort of the crew by managing oxygen supply, cabin pressure, and other environmental controls.
+	\item Power System: Provides and manages electrical power to various parts of the aircraft, including generators and batteries, to support all onboard systems.
+\end{enumerate}
+
+
+\subsection{Component Timing Constraints}
+The following timing constraints are critical for the optimal performance of our components:
+\begin{enumerate}[label=T\arabic*)]
+	\item Flight Control System (FCS): Must process pilot inputs and adjust flight surfaces within 10-50 ms.
+	\item Propulsion and Fuel System: Adjust engine and fuel parameters within 50-200 ms.
+	\item Communication Systems: Maximum 50-100 ms latency for message transmission; 100-500 ms latency for ground station communication.
+	\item Navigation Systems: Provide position updates at intervals of 100-200 ms.
+	\item ISR Systems: Complete radar scans within 1 second; process SIGINT and ELINT data within 50-100 ms.
+	\item Weapons and Defensive Systems: Acquire and track targets within 1-2 seconds; deploy weapons and countermeasures within 100 ms of command or threat detection.
+	\item Life Support System: Monitor and adjust oxygen supply and cabin pressure in real-time, with updates every 100-200 ms.
+	\item Power System: Manage power distribution to critical systems in real-time, with adjustments made within 50-100 ms.
+\end{enumerate}
+
+\subsection{Component Criticality}
+The criticality of each component is classified as follows:
+\begin{enumerate}[label=C\arabic*)]
+	\item Flight Control System (FCS): Hard real-time. Missing a deadline could lead to loss of control and potential crashes.
+	\item Propulsion and Fuel System: Hard real-time. Missing a deadline can lead to engine failure or inefficient fuel distribution.
+	\item Communication Systems: Hard real-time for sensor fusion; soft real-time for general communication.
+	\item Navigation Systems: Firm real-time. Occasional delays may degrade positioning accuracy but do not cause system failure.
+	\item ISR Systems: Soft and hard real-time. Delays in processing sensor data may degrade intelligence quality but do not compromise safety. However, delays may also miss threats and targets, depending on the system's role.
+	\item Weapons and Defensive Systems: Hard real-time. Delays may result in missed opportunities or even loss of the aircraft.
+	\item Life Support System: Hard real-time.
+	\item Power System: Hard real-time.
+\end{enumerate}
+
+\subsection{Role of S3K}
+
+\begin{itemize}
+	\item Isolation and safety. 
+
+		\begin{itemize}
+			\item Partitioning: 
+				The S3K kernel divides the system into isolated partitions, each running critical tasks independently. 
+				This isolation ensures that critical functions, such as the Flight Control System and Life Support System, are protected from faults in other partitions.
+			\item Fault Containment: 
+				By isolating critical functions, the system can contain and manage faults more effectively, preventing cascading failures and ensuring that essential systems remain operational.
+		\end{itemize}
+	\item Deterministic Behavior. 
+		\begin{itemize}			
+			\item Precise Control: 
+				S3K allows for precise control over when and where a partition executes, ensuring that hard real-time deadlines are met. 
+				This deterministic behavior is crucial for systems like the Flight Control System, where missing a deadline could lead to loss of control.
+			\item Consistent Behavior: 
+				The precise control ensures that each partition runs deterministically at the correct time, enabling error analysis, reproducibility, and consistent performance. 
+				This is essential for meeting timing constraints and ensuring reliable operation.
+			\item Predictable microarchitecture: 
+				By flushing the microarchitectural state using the temporal fence before dispatching a partition, S3K can fix the possible states of a partition. 
+				This process improves the partition's predictability and can make its timing behavior more deterministic.
+		\end{itemize}
+	\item Dynamic Resource Management. 
+		\begin{itemize}
+			\item Resource Allocation: 
+				The kernel can dynamically allocate CPU time and memory to partitions based on their criticality and current load, optimizing resource utilization. 
+				Critical components can be given higher priority to ensure they always have the resources needed to meet their deadlines.
+			\item Adaptive Scheduling: 
+				The system can reallocate resources based on mission demands. For example:
+				\begin{itemize}
+					\item Dogfight Scenario: 
+						During a dogfight, the system may reallocate execution time from the communication or navigation system to the Flight Control, Propulsion, and Fuel System to increase responsiveness.
+					\item Take-off and Landing: 
+						During take-off and landing, the system may prioritize communication, flight control, propulsion, and fuel systems over weapons and defensive systems.
+					\item Reconnaissance Missions: 
+						During reconnaissance, the system may allocate more execution time to ISR and navigation systems to improve intelligence data.
+					\item Cruising Over Friendly Territory: 
+						The system can redistribute execution time from navigation, communication, weapons, and defensive systems to the fuel system to improve efficiency.
+				\end{itemize}
+			\item Flexibility: 
+				The dynamic nature of S3K allows the system to adapt to unforeseen circumstances, such as component damage, by reallocating resources or disconnecting affected components.
+		\end{itemize}
+
+	\item Modular design. 
+		\begin{itemize}			
+			\item Easy Integration: 
+				S3K's modular design allows for easy integration of components and upgrades. 
+				Each partition can be developed, tested, and maintained independently before being integrated into the system.
+			\item On-the-Fly Adjustments: 
+				The modular design also allows for the removal and addition of partitions in-flight, providing flexibility to adapt to changing mission requirements.
+		\end{itemize}
+	\item Timing Synchronization. 
+		\begin{itemize}
+			\item Multi-Core and Multi-CPU Synchronization: 
+				S3K's schedules can be synchronized across multiple cores and CPUs, allowing for precise control over the execution environment and minimizing interference between partitions.
+			\item Predictable Behavior: 
+				This synchronization improves the predictability of partition performance and ensures that deadlines are met, even when multiple systems run in parallel. 
+				For example, synchronization prevents the communication system from interfering with the Flight Control System, ensuring that critical deadlines are not missed.
+			\item Synchronized Redundancy: 
+				For safety-critical components, redundancy is essential. 
+				The failure of the Flight Control System, for example, can lead to catastrophic failure. 
+				To mitigate this risk, multiple Flight Control Systems are run in parallel, and their state and outputs are compared.
+				S3K's synchronized schedule allows these systems to run in parallel and maintain consistent states, enhancing the reliability and safety of the overall system.
+		\end{itemize}
+	\item Criticality separation.
+		\begin{itemize}			
+			\item Mixed Scheduling: 
+				S3K allows for the separation of tasks of different criticality into different partitions. 
+				For instance, critical functions like Flight Control and Life Support can be statically scheduled to ensure they meet their hard deadlines.
+				Less critical systems, such as communication and navigation, can be grouped into partitions using soft real-time schedulers, optimizing resource usage while ensuring that critical tasks are prioritized.
+		\end{itemize}
+	\item Information Security.
+		\begin{itemize}
+			\item Spatial Isolation: 
+				S3K hinders information flow between components by preventing them from accessing resources they are not authorized to access.
+			\item Time Protection:
+				S3K's time protection hinders information from flowing from other components by intra-core side-channels.
+				This ensures that sensitive data can only be accessed through known channels.
+			\item Third-party Components:
+				Spatial isolation and time protection ensures that we can integrate and isolate less trusted third-party components.
+				If the third-party component is compromised, the spatial and temporal isolation provided by S3K ensures that the rest of the system is secure and operational.
+				This allows for a greater flexibility in system design as we can chose more components to integrate into our system.
+		\end{itemize}
+\end{itemize}
+

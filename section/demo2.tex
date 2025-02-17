@@ -1,0 +1,197 @@
+\newpage
+\section{Demo: Autonomous Reconnaissance Drone}
+Our autonomous reconnaissance drone features advanced communication capabilities and a specialized configuration with multiple redundant computers to enhance reliability and safety. 
+To optimize space, weight, and power (SWaP), multiple components are integrated into a single electronic control unit (ECU).
+
+\subsection{Components}
+Our aircraft includes the following key components:
+\begin{enumerate}[label=P\arabic*)]
+	\item Flight Control System: 
+		Interprets control inputs to adjust the aircraft's flight surfaces, engine, fuel and energy systems.
+	\item Autonomous System: Processes sensor data and commands to make decisions on flight path and intelligence gathering, enabling autonomous operation.
+	\item Communication Systems: For communicating with a ground station to receive general commands.
+	\item Navigation and Positioning Systems: Utilizes Global Navigation Satellite System (GNSS) and Inertial Navigation System (INS) for precise positioning and navigation.
+	\item Intelligence, Surveillance, and Reconnaissance (ISR) System: Signals Intelligence (SIGINT), Electronic Intelligence (ELINT), and Infrared (IR) systems for comprehensive intelligence gathering.
+\end{enumerate}
+
+In Table \ref{tbl:drone}, we have the timing constraints and criticalities of the components summerized.
+
+\begin{figure}[ht]
+	\centering
+	\begin{tabular}{c | c | c | c}
+		Component & Max Latency & WCET & Criticality \\\hline
+		Flight Control System & 50 ms & 5 ms & Hard real-time \\
+		Autonomous System & 200 ms & 50 ms & Hard real-time \\
+		Communication System & 200 ms & 30 ms & Hard/Firm real-time \\
+		Nav.\ \& Pos.\ System & 200 ms & 40 ms & Firm real-time \\
+		ISR system & 100 ms & 20 ms & Soft real-time \\
+	\end{tabular}
+	\caption{Timing Constraints and Criticality of Components}
+	\label{tbl:drone}
+\end{figure}
+
+
+\subsection{Role of S3K (To be revised)}
+\begin{itemize}
+	\item Isolation and safety. 
+
+		\begin{itemize}
+			\item Partitioning: 
+				The S3K kernel divides the system into isolated partitions, each running critical tasks independently. 
+				This isolation ensures that critical functions, such as the Flight Control System, are protected from faults in other partitions.
+			\item Fault Containment: 
+				By isolating critical functions, the system can contain and manage faults more effectively, preventing cascading failures and ensuring that essential systems remain operational.
+		\end{itemize}
+	\item Deterministic Behavior. 
+		\begin{itemize}			
+			\item Precise Control: 
+				S3K allows for precise control over when and where a partition executes, ensuring that hard real-time deadlines are met. 
+				This deterministic behavior is crucial for systems like the Flight Control System, where missing a deadline could lead to loss of control.
+			\item Consistent Behavior: 
+				The precise control ensures that each partition runs deterministically at the correct time, enabling error analysis, reproducibility, and consistent performance. 
+				This is essential for meeting timing constraints and ensuring reliable operation.
+			\item Predictable microarchitecture: 
+				By flushing the microarchitectural state using the temporal fence before dispatching a partition, S3K can fix the possible states of a partition. 
+				This process improves the partition's predictability and can make its timing behavior more deterministic.
+		\end{itemize}
+	\item Dynamic Resource Management. 
+		\begin{itemize}
+			\item Resource Allocation: 
+				The kernel can dynamically allocate CPU time and memory to partitions based on their criticality and current load, optimizing resource utilization. 
+				Critical components can be given higher priority to ensure they always have the resources needed to meet their deadlines.
+			\item Adaptive Scheduling: 
+				The system can reallocate resources based on mission demands. For example:
+				\begin{itemize}
+					\item Take-off and Landing: 
+						During take-off and landing, the system may prioritize communication, flight control, propulsion, and fuel systems over ISR.
+					\item Reconnaissance Missions: 
+						During reconnaissance, the system may allocate more execution time to ISR and navigation systems to improve intelligence gathering.
+				\end{itemize}
+			\item Flexibility: 
+				The dynamic nature of S3K allows the system to adapt to unforeseen circumstances, such as component damage, by reallocating resources or disconnecting affected components.
+		\end{itemize}
+
+	\item Modular design. 
+		\begin{itemize}			
+			\item Easy Integration: 
+				S3K's modular design allows for easy integration of components and upgrades. 
+				Each partition can be developed, tested, and maintained independently before being integrated into the system.
+			\item On-the-Fly Adjustments: 
+				The modular design also allows for the removal and addition of partitions in-flight, providing flexibility to adapt to changing mission requirements.
+		\end{itemize}
+	\item Timing Synchronization. 
+		\begin{itemize}
+			\item Multi-Core and Multi-CPU Synchronization: 
+				S3K's schedules can be synchronized across multiple cores and CPUs, allowing for precise control over the execution environment and minimizing interference between partitions.
+			\item Predictable Behavior: 
+				This synchronization improves the predictability of partition performance and ensures that deadlines are met, even when multiple systems run in parallel. 
+				For example, synchronization prevents the communication system from interfering with the Flight Control System, ensuring that critical deadlines are not missed.
+			\item Synchronized Redundancy: 
+				For safety-critical components, redundancy is essential. 
+				The failure of the Flight Control System, for example, can lead to catastrophic failure. 
+				To mitigate this risk, multiple Flight Control Systems are run in parallel, and their state and outputs are compared.
+				S3K's synchronized schedule allows these systems to run in parallel and maintain consistent states, enhancing the reliability and safety of the overall system.
+		\end{itemize}
+	\item Criticality separation.
+		\begin{itemize}			
+			\item Mixed Scheduling: 
+				S3K allows for the separation of tasks of different criticality into different partitions. 
+				For instance, critical functions like Flight Control can be statically scheduled to ensure they meet their hard deadlines.
+				Less critical systems, such as communication and navigation, can be grouped into partitions using soft or firm real-time schedulers, optimizing resource usage while ensuring that critical tasks are prioritized.
+		\end{itemize}
+	\item Information Security.
+		\begin{itemize}
+			\item Spatial Isolation: 
+				S3K hinders information flow between components by preventing them from accessing resources they are not authorized to access.
+			\item Time Protection:
+				S3K's time protection hinders information from flowing from other components by intra-core side-channels.
+				This ensures that sensitive data can only be accessed through known channels.
+			\item Third-party Components:
+				Spatial isolation and time protection ensures that we can integrate and isolate less trusted third-party components.
+				If the third-party component is compromised, the spatial and temporal isolation provided by S3K ensures that the rest of the system is secure and operational.
+				This allows for a greater flexibility in system design as we can chose more components to integrate into our system.
+		\end{itemize}
+\end{itemize}
+
+\subsection{Demonstrator Implementation}
+
+\subsubsection{Components}
+
+We implement an abstracted version of the reconnaissance drone in S3K using five components with varying criticalities. 
+The system features a system monitor that oversees the overall allocation of resources to these components. 
+Each component, in turn, has its own monitor that manages resource distribution to its subcomponents.
+
+This hierarchical resource delegation enables a modular approach to system design and implementation. 
+The system monitor allocates sufficient resources to component monitors, which then handle more detailed resource management. 
+This structure allows for the addition, removal, and toggling of components and resources via the system monitor implemented to follow a simple policy regarding minimal resource constraints. 
+The specifics of resource management are handled at the component level.
+
+This modular, approach allows us to integrate components seamlessly. 
+The system monitor only needs to know their minimum resource requirements and the scheduling constraints, enabling efficient and secure integration.
+
+We have the following components:
+\begin{itemize}
+	\item Autonomy Component ($A$): Checks the system state, mission parameters and more. Sends directives to relevant components.
+	\item Flight Control Component ($F$): Flight Control, Propulsion, Fuel, and Power systems.
+	\item Navigation and Positioning Component ($N$): Navigation system using GNSS, INS, or CNS. 
+	\item Communication Component ($C$): Communication system using satallite, radio, WiFi, and more.
+	\item ISR Component ($R$): A third-party ISR system.
+\end{itemize}
+\todo{Object detection component?}
+
+\subsubsection{Scheduling Specifications}
+\begin{description}
+	\item[System monitor.] Hard real-time scheduling.
+		\begin{itemize}
+			\item Always scheduled to receive directives from autonomous, communication or flight control system. Distributes timing resources according to directives.
+			\item Implements a policy that constrains how resources may be distributed.
+			\item When the monitor changes the schedule of a component, or enables a component, then the monitor yields to the component's monitor.
+		\end{itemize}
+	\item[Autonomy component.] Toggled hard real-time scheduling.
+		\begin{itemize}
+			\item System monitor may disable this component if the drone is remotely controlled.
+			\item If remote connection is lost, the system monitor schedules the autonomy component.
+			\item When enabled, the autonomy component require a minimum amount of execution time to meet its deadlines. More execution time can be provided to improve performance.
+		\end{itemize}
+	\item[Flight Control Component.] Toggled hard real-time scheduling.
+		\begin{itemize}
+			\item Always scheduled statically when in-flight.
+			\item System monitor may disable this component when the drone is on the ground.
+			\item May send directive to system monitor to indicate an emergency situation (loss of power, fuel, malfunction), requiring a different scheduling.
+		\end{itemize}
+	\item[Communication Component.] Toggled firm or hard real-time scheduling.
+		\begin{itemize}
+			\item This component may be disabled when communications are being jammed, or when the drone goes into a stealth mode.
+			\item When this component is disabled, the autonomy component must be enabled.
+		\end{itemize}
+	\item[Navigation Component.] Firm real-time scheduling.
+		\begin{itemize}
+			\item In a stealth mode, the component may use inertial and celestial navigation.
+			\item System monitor may add or remove execution time from this component. When this occurs, the system monitor notifies the navigation monitor.
+		\end{itemize}
+	\item [ISR Component.] Soft real-time component. Best-effort scheduling.
+		\begin{itemize}
+			\item A third-party component. We do not know the exact details of how it works.
+		\end{itemize}
+\end{description}
+
+\begin{figure}
+	\centering
+	\begin{tabular}{c | c }
+		Slots & Component \\\hline
+		0-20 & System Monitor (1) \\
+		20-40 & ISR (2) \\
+		40-45 & FCS (1) \\
+		45-85 & Autonomous (1) \\
+		90-95 & FCS (2) \\
+		95-100 & Autonomous (1) \\
+		100-120 & Comm (1) \\
+		120-140 & ISR (2) \\
+		140-145 & FCS (3) \\
+		145-155 & Comm (1) \\
+		155-190 & Nav (1) \\
+		190-195 & FCS (4) \\
+		195-200 & Nav (1) \\
+	\end{tabular}
+	\caption{Scheduling of Drone. A major frame consists of 200 slots. Each slot represents 1 ms. One major frame represents 200 ms of execution time.}
+\end{figure}
