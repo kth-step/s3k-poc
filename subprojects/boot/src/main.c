@@ -1,5 +1,6 @@
-#include "s3k/s3k.h"
+#include "s3k.h"
 
 int main(void)
 {
+	return s3k_get_pid();
 }
