@@ -1,4 +1,4 @@
 [wrap-git]
 url = https://github.com/kth-step/libs3k.git
-revision = v1.0.0
+revision = hakarlsson/dev
 depth = 1
