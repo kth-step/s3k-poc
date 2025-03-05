@@ -6,12 +6,13 @@ ELFS=$@
 
 LOADERS=""
 for elf in $ELFS; do
-	LOADERS+="-device loader,file='$(realpath $elf)' "
+	LOADERS+="-device loader,file='$elf' "
 done
 
 cat <<EOF > $SCRIPT
 #!/bin/sh
-qemu-system-riscv64 -M virt -smp 1 -m 128M -nographic -bios none $LOADERS \$@
+cd \$(dirname \$0)
+exec qemu-system-riscv64 -M virt -smp 1 -m 128M -nographic -bios none $LOADERS \$@
 EOF
 
 chmod +x $SCRIPT
