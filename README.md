@@ -31,7 +31,7 @@ If you want to run GDB in TUI mode, we recommend that you also install the ncurs
 
 **Build and Install toolchain:**
 To install the toolchain do as follows:
-```
+```sh
 # Clone the toolchain with git
 git clone https://github.com/riscv-collab/riscv-gnu-toolchain
 cd riscv-gnu-toolchain
@@ -48,7 +48,7 @@ Otherwise, you may have to run the above `make` command using `sudo`.
 
 **Add toolchain to your $PATH variable:**
 To ensure that your toolchain is available in your shell, add `$INSTALL_LOCATION/bin` to your `$PATH`:
-```
+```sh
 echo "export PATH='$INSTALL_LOCATION/bin:$PATH'" >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -56,7 +56,7 @@ source ~/.bashrc
 ### Build the Project
 
 Once you have built and installed the required tools, you can build the project by:
-```
+```sh
 meson setup my_build --cross-file cross/rv64imac.toml
 meson compile -C my_build
 ```
@@ -64,6 +64,6 @@ meson compile -C my_build
 ### Run the Project
 
 Run the project as follows:
-```
+```sh
 ./my_build/qemu.sh
 ```
