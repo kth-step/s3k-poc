@@ -20,15 +20,16 @@ For this project, we need the `riscv64-unknown-elf-gcc` compiler targeting the `
 ##### Docker container
 
 We have a docker container [hakarlsson/riscv-picolibc](https://hub.docker.com/repository/docker/hakarlsson/riscv-picolibc/general) with the RISC-V GNU Toolchain, and Meson.
+
 **TODO: How to use the container.**
 
 ##### Build from source
 
-*Prerequisites for the toolchain:*
+**Prerequisites for the toolchain:**
 To install the toolchain, first install its [prerequisites](https://github.com/riscv-collab/riscv-gnu-toolchain?tab=readme-ov-file#prerequisites).
 If you want to run GDB in TUI mode, we recommend that you also install the ncurses library.
 
-*Build and Install toolchain:*
+**Build and Install toolchain:**
 To install the toolchain do as follows:
 ```
 # Clone the toolchain with git
@@ -42,11 +43,11 @@ cd riscv-gnu-toolchain
 make
 ```
 
-We recommend that you set the install location (`$INSTALL_LOCATION`) to a directory in your `$HOME$`, such as `$HOME/tools/riscv`.
+We recommend that you set the install location (`$INSTALL_LOCATION`) to a directory in your `$HOME`, such as `$HOME/tools/riscv`.
 Otherwise, you may have to run the above `make` command using `sudo`.
 
-*Add toolchain to your $PATH variable:* 
-To ensure that your toolchain is available in your shell, add `INSTALL_LOCATION/bin` to your `$PATH`:
+**Add toolchain to your $PATH variable:**
+To ensure that your toolchain is available in your shell, add `$INSTALL_LOCATION/bin` to your `$PATH`:
 ```
 echo "export PATH='$INSTALL_LOCATION/bin:$PATH'" >> ~/.bashrc
 source ~/.bashrc
