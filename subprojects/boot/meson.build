@@ -7,7 +7,7 @@ subdir('src')
 
 link_args = ['-nostartfiles']
 
-executable('boot.elf', 
+elf = executable('boot.elf', 
   sources : sources,
   link_args : link_args,
   dependencies : [libs3k_dep]
