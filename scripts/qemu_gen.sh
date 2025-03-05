@@ -11,7 +11,7 @@ done
 
 cat <<EOF > $SCRIPT
 #!/bin/sh
-qemu-system-riscv64 -M virt -smp 1 -m 128M -nographic -bios none $LOADERS
+qemu-system-riscv64 -M virt -smp 1 -m 128M -nographic -bios none $LOADERS \$@
 EOF
 
 chmod +x $SCRIPT
