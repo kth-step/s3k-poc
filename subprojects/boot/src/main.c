@@ -1,22 +1,9 @@
 #include "s3k.h"
+#include "serio.h"
+#include "serio/uart/ns16550a.h"
 
-#define UART ((void *)0x10000000)
-
-int putchar(int c)
-{
-	volatile char *uart = UART;
-	*uart = c;
-	return (char)c;
-}
-
-int putstr(char *s)
-{
-	int i = 0;
-	while (s[i] != '\0') {
-		putchar(s[i++]);
-	}
-	return i;
-}
+SERIOFILE _uartfile = SERIO_UART_NS16550A(0x10000000);
+SERIOFILE *const _serio_out = &_uartfile;
 
 int main(void)
 {
@@ -25,8 +12,8 @@ int main(void)
 	s3k_pmp_load(10, 1);
 	s3k_sync();
 
-	while (1) {
-		putstr("hello, world\n");
-	}
-	return s3k_get_pid();
+	for (int i = 0; i < 1000; ++i)
+		serio_printf("hello, world %d\n", -i);
+	serio_printf("hello, world from %D\n", s3k_get_pid());
+	return 0;
 }
