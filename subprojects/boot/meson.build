@@ -1,10 +1,7 @@
 project('boot', 'c', version : '0.1')
 
-libs3k = subproject('libs3k')
-libs3k_dep = libs3k.get_variable('libs3k_dep')
-
-libserio = subproject('libserio')
-libserio_dep = libserio.get_variable('libserio_dep')
+libs3k_dep = subproject('libs3k').get_variable('dep')
+libserio_dep = subproject('libserio').get_variable('dep')
 
 subdir('src')
 subdir('platform' / get_option('platform'))
@@ -14,7 +11,7 @@ link_args = [
   '-T' + linker_script.full_path()
   ]
 
-elf = executable('boot.elf', 
+elf = executable(meson.project_name() + '.elf', 
   sources : sources,
   link_args : link_args,
   dependencies : [libs3k_dep, libserio_dep],
