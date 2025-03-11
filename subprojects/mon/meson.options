@@ -1,2 +1,0 @@
-option('platform', type : 'combo', choices : ['qemu_virt'], value : 'qemu_virt')
-
