@@ -15,11 +15,19 @@ enum {
 	CHANNEL = 6,
 };
 
+enum {
+	PID_BOOT = 0,
+	PID_COMM = 1,
+	PID_FCS = 2,
+	PID_NAV = 3,
+};
+
 void error(int err)
 {
 	if (err) {
 		serio_printf("Error %s\n", s3k_err2str(err));
-		while (1) {}
+		while (1) {
+		}
 	}
 }
 
@@ -37,14 +45,13 @@ void setup_process(int pid, uint64_t addr)
 	error(s3k_mon_pmp_load(MONITOR, pid, 1, 1));
 	// Set PC
 	error(s3k_mon_reg_write(MONITOR, pid, S3K_REG_PC, addr));
-	// Done?
-	error(s3k_mon_resume(MONITOR, pid));
 }
 
 void setup_uart(void)
 {
-	s3k_cap_t pmp_uart = s3k_mk_pmp(s3k_napot_encode(0x10000000, 0x20), 0x3);
-	s3k_cap_derive(2,8,pmp_uart);
+	s3k_cap_t pmp_uart
+	    = s3k_mk_pmp(s3k_napot_encode(0x10000000, 0x20), 0x3);
+	s3k_cap_derive(2, 8, pmp_uart);
 	s3k_pmp_load(8, 2);
 	s3k_sync();
 }
@@ -55,19 +62,15 @@ int main(void)
 	serio_printf("boot loaded initialized\n");
 
 	serio_printf("initializing comm\n");
-	setup_process(1, 0x80020000);
+	setup_process(PID_COMM, 0x80020000);
 
 	serio_printf("initializing fcs\n");
-	setup_process(2, 0x80030000);
+	setup_process(PID_FCS, 0x80030000);
 
 	serio_printf("initializing nav\n");
-	setup_process(3, 0x80040000);
+	setup_process(PID_NAV, 0x80040000);
 
 	serio_printf("initialization complete\n");
-	while (1) {
-		s3k_mon_yield(MONITOR, 1);
-		s3k_mon_yield(MONITOR, 2);
-		s3k_mon_yield(MONITOR, 3);
-	}
+
 	return 0;
 }
