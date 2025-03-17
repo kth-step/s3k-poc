@@ -17,8 +17,10 @@ enum {
 
 void error(int err)
 {
-	while (err)
-		serio_printf("Error %d\n", err);
+	if (err) {
+		serio_printf("Error %s\n", s3k_err2str(err));
+		while (1) {}
+	}
 }
 
 void setup_process(int pid, uint64_t addr)
