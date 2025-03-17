@@ -6,7 +6,7 @@ from scipy.optimize import milp, LinearConstraint, Bounds
 
 done = False
 while not done:
-    M = np.random.randint(-50, 51, size = (3,3,))
+    M = np.random.randint(-5, 6, size = (3,3,))
     done = True
     for i in range(3):
         if not np.any(M[i,:] > 0):
