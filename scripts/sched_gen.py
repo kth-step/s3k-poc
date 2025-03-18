@@ -7,11 +7,14 @@ from scipy.optimize import milp, LinearConstraint, Bounds
 done = False
 while not done:
     M = np.random.randint(-5, 6, size = (3,3,))
+    B = np.random.randint(0, 2, size = (3,3,))
+    M[B == 1] = 0
     done = True
     for i in range(3):
         if not np.any(M[i,:] > 0):
             done = False
             
+M *= 100
 
 print("M = ", M)
 
@@ -19,9 +22,9 @@ def s3k_wcmf(M):
     v_opt = np.array([0,0,0])
     opt = 0
 
-    for i in range(11):
-        for j in range(11):
-            for k in range(11):
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
                 v = np.array([i,j,k])
                 s = M.dot(v)
                 s[s < 0] = 0
@@ -42,7 +45,7 @@ T = M.copy()
 T[T < 0] = 0
 wcet_traditional = 0
 for i in range(3):
-    wcet_traditional += np.sum(T[i,:] * 10)
+    wcet_traditional += np.sum(T[i,:] * 1)
 
 print("Worst-case major frame (traditional): ", wcet_traditional)
 
