@@ -1,12 +1,14 @@
 #include "s3k.h"
 #include "serio.h"
-#include "serio/uart/ns16550a.h"
+#include "serio/ns16550a.h"
 
 #define N 4
 #define M 3
 
-SERIOFILE _uartfile = SERIO_UART_NS16550A(0x10000000);
-SERIOFILE *const _serio_out = &_uartfile;
+int serio_putchar(int c)
+{
+	return serio_ns16550a_putchar(c, (void*)0x10000000);
+}
 
 enum {
 	BOOT_PMP = 0,
