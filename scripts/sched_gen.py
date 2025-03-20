@@ -111,5 +111,5 @@ class LinearSchedule:
         }
 
 if __name__ == "__main__":
-    lin_sched = LinearSchedule(8, 8, v_range=(0,3), p0=0.7)
+    lin_sched = LinearSchedule(3, 4, v_range=(0,1), p0=0.5)
     pprint.pp(lin_sched.get_data())
