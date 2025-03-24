@@ -1,2 +1,2 @@
-option('platform', type : 'combo', choices : ['qemu_virt'], value : 'qemu_virt')
+option('platform', type : 'combo', choices : ['qemu_virt', 'cheshire'], value : 'qemu_virt', yield : true)
 
