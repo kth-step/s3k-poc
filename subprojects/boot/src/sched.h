@@ -5,8 +5,8 @@
 #define N_COMPONENTS 3
 #define N_VARIABLES 4
 
-static const int a_matrix[12] = {2, 0, 0, 0, 0, 0, 0, 2, 0, 5, 0, 4};
-static const int b_vector[3] = {7, 0, 9};
+static const int a_matrix[12] = {0, 0, 0, 4, 0, 0, 1, 0, 4, 4, 0, 0};
+static const int b_vector[3] = {8, 4, 1};
 
 static inline void sched_calc(int v[N_VARIABLES], int s[N_COMPONENTS]) {
     for (int i = 0; i < N_COMPONENTS; ++i) {

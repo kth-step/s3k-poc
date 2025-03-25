@@ -2,6 +2,8 @@
 #include "serio.h"
 #include "sched.h"
 
+#define SYSTEM_SLOTS (NSLOT - 2)
+
 enum {
 	BOOT_PMP = 0,
 	RAM_MEM = 1,
@@ -10,13 +12,6 @@ enum {
 	HART0_TIME = 4,
 	MONITOR = 5,
 	CHANNEL = 6,
-};
-
-enum {
-	PID_BOOT = 0,
-	PID_COMM = 1,
-	PID_FCS = 2,
-	PID_NAV = 3,
 };
 
 void error(int err)
@@ -55,6 +50,7 @@ void setup_process(int pid, uint64_t addr)
 
 	// Start process
 	error(s3k_mon_resume(MONITOR, pid));
+	s3k_mon_yield(MONITOR, pid);
 }
 
 void setup_uart(void)
@@ -68,16 +64,17 @@ void setup_uart(void)
 
 void setup_time(void)
 {
-	s3k_cap_t boot_time0 = s3k_mk_time(0, 0, 2);
-	s3k_cap_t system_time = s3k_mk_time(0, 2, NSLOT);
-	error(s3k_cap_derive(HART0_TIME, 16, boot_time0));
+	s3k_cap_t system_time = s3k_mk_time(0, 0, SYSTEM_SLOTS);
+	s3k_cap_t boot_time0 = s3k_mk_time(0, SYSTEM_SLOTS, NSLOT);
 	error(s3k_cap_derive(HART0_TIME, 10, system_time));
+	error(s3k_cap_derive(HART0_TIME, 16, boot_time0));
+	error(s3k_cap_delete(HART0_TIME));
 	s3k_sleep(0);
 }
 
 unsigned long xorshift()
 {
-	static unsigned long x = 123456789;
+	static unsigned long x = 123456781;
 	static unsigned long y = 362436069;
 	static unsigned long z = 521288629;
 	static unsigned long w = 88675123;
@@ -89,44 +86,34 @@ unsigned long xorshift()
 	return w;
 }
 
-void scheduler(void)
+void variable_gen(int v[N_VARIABLES])
 {
-	int start, end;
+	for (int i = 0; i < N_VARIABLES; ++i) {
+		v[i] = (xorshift() % (V_MAX - V_MIN + 1)) + V_MIN;
+	}
+}
+
+void apply_schedule(int s[N_COMPONENTS])
+{
 	int system_time_cap = 10;
+	int end;
+	int start = 0; 
 
-	int v[N_VARIABLES];
-	int s[N_COMPONENTS];
-	s3k_sleep(0);
-
-	while (1) {
-		uint64_t start_time = s3k_get_time();
-		error(s3k_cap_revoke(system_time_cap));
-		for (int i = 0; i < N_VARIABLES; ++i)
-			v[i] = xorshift() % 2;
-		sched_calc(v, s);
-		start = 2;
-		end = start + s[0];
+	s3k_cap_revoke(system_time_cap);
+	for (int i = 1; i <= N_COMPONENTS; ++i) {
+		end = start + s[i - 1]; 
+		if (start < end && end <= SYSTEM_SLOTS) {
+			s3k_cap_derive(system_time_cap, 26, s3k_mk_time(0, start, end));
+			s3k_mon_suspend(MONITOR, i);
+			s3k_mon_cap_send(MONITOR, 26, i, 4);
+			s3k_mon_resume(MONITOR, i);
+		}
+		start = end;
+	}
+	if (end <= SYSTEM_SLOTS) {
+		end = SYSTEM_SLOTS;
 		s3k_cap_derive(system_time_cap, 26, s3k_mk_time(0, start, end));
-		start = end;
-		end = start + s[1];
-		s3k_cap_derive(system_time_cap, 27, s3k_mk_time(0, start, end));
-		start = end;
-		end = start + s[2];
-		s3k_cap_derive(system_time_cap, 28, s3k_mk_time(0, start, end));
-		s3k_cap_derive(system_time_cap, 29, s3k_mk_time(0, end, NSLOT));
-		s3k_cap_delete(29);
-		s3k_mon_suspend(MONITOR, PID_COMM);
-		s3k_mon_suspend(MONITOR, PID_FCS);
-		s3k_mon_suspend(MONITOR, PID_NAV);
-		s3k_mon_cap_send(MONITOR, 26, PID_COMM, 3);
-		s3k_mon_cap_send(MONITOR, 27, PID_FCS, 3);
-		s3k_mon_cap_send(MONITOR, 28, PID_NAV, 3);
-		s3k_mon_resume(MONITOR, PID_COMM);
-		s3k_mon_resume(MONITOR, PID_FCS);
-		s3k_mon_resume(MONITOR, PID_NAV);
-		uint64_t end_time = s3k_get_time();
-		serio_printf("boot: %d, %d, %D\n", end - 2, NSLOT - end, end_time - start_time);
-		s3k_sleep(0);
+		s3k_cap_delete(26);
 	}
 }
 
@@ -134,19 +121,28 @@ int main(void)
 {
 	setup_uart();
 
-	serio_printf("initializing comm\n");
-	setup_process(PID_COMM, 0x80020000);
-
-	serio_printf("initializing fcs\n");
-	setup_process(PID_FCS, 0x80030000);
-
-	serio_printf("initializing nav\n");
-	setup_process(PID_NAV, 0x80040000);
-
+	for (int i = 1; i <= N_COMPONENTS; ++i) {
+		setup_process(i, 0x80010000 + 0x10000 * i);
+	}
 	serio_printf("initialization complete\n");
 
 	setup_time();
-	scheduler();
+
+	int v[N_VARIABLES];
+	int s[N_COMPONENTS];
+
+
+	for (int i = 0; i < 100; ++i) {
+		uint64_t start_time = s3k_get_time();
+		variable_gen(v);
+		sched_calc(v, s);
+		apply_schedule(s);
+		uint64_t end_time = s3k_get_time();
+		serio_printf("sched time %d: %D\n", i, end_time - start_time);
+		s3k_sleep(0);
+	}
+	s3k_cap_revoke(10);
+	serio_putstr("Test completed!\n");
 
 	return 0;
 }
