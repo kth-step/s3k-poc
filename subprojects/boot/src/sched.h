@@ -1,0 +1,19 @@
+#pragma once
+
+#define V_MIN 0
+#define V_MAX 1
+#define N_COMPONENTS 3
+#define N_VARIABLES 4
+
+static const int a_matrix[12] = {2, 0, 0, 0, 0, 0, 0, 2, 0, 5, 0, 4};
+static const int b_vector[3] = {7, 0, 9};
+
+static inline void sched_calc(int v[N_VARIABLES], int s[N_COMPONENTS]) {
+    for (int i = 0; i < N_COMPONENTS; ++i) {
+        s[i] = b_vector[i];
+        for (int j = 0; j < N_VARIABLES; ++j) {
+            s[i] += v[j] * a_matrix[i * N_VARIABLES + j];
+        }
+    }
+}
+

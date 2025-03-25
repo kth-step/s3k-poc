@@ -4,21 +4,17 @@ project('s3k-poc', 'c',
   default_options : [
     'warning_level=2',
     'c_std=gnu11',
-    'optimization=s']
+    'optimization=s',
+    'b_lto=true',
+    ]
   )
 
-s3k = subproject('s3k')
-boot = subproject('boot')
-comm = subproject('comm')
-fcs = subproject('fcs')
-nav = subproject('nav')
-
 elfs = [
-  boot.get_variable('elf'), 
-  comm.get_variable('elf'),
-  fcs.get_variable('elf'),
-  nav.get_variable('elf'),
-  s3k.get_variable('elf'),
+  subproject('boot').get_variable('elf'), 
+  subproject('comm').get_variable('elf'),
+  subproject('fcs').get_variable('elf'),
+  subproject('nav').get_variable('elf'),
+  subproject('s3k').get_variable('elf'),
   ]
 
 qemu_gen = find_program('scripts/qemu_gen.sh')

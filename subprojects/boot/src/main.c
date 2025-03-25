@@ -1,9 +1,6 @@
 #include "s3k.h"
 #include "serio.h"
-
-#define N 4
-#define M 3
-
+#include "sched.h"
 
 enum {
 	BOOT_PMP = 0,
@@ -78,23 +75,6 @@ void setup_time(void)
 	s3k_sleep(0);
 }
 
-void schedule(const int v[N], int s[M])
-{
-	static int A[M][N] = {
-	    {0, 5,  0,  0 },
-	    {5, -4, 0,  -2},
-	    {0, 0,  -1, 0 },
-	};
-	static int b[M] = {6, 14, 10};
-
-	for (int i = 0; i < M; ++i) {
-		s[i] = b[i];
-		for (int j = 0; j < N; ++j) {
-			s[i] += A[i][j] * v[j];
-		}
-	}
-}
-
 unsigned long xorshift()
 {
 	static unsigned long x = 123456789;
@@ -114,16 +94,16 @@ void scheduler(void)
 	int start, end;
 	int system_time_cap = 10;
 
-	int v[N] = {0, 1, 0, 1};
-	int s[M] = {0, 0, 0};
+	int v[N_VARIABLES];
+	int s[N_COMPONENTS];
 	s3k_sleep(0);
 
 	while (1) {
 		uint64_t start_time = s3k_get_time();
 		error(s3k_cap_revoke(system_time_cap));
-		for (int i = 0; i < N; ++i)
+		for (int i = 0; i < N_VARIABLES; ++i)
 			v[i] = xorshift() % 2;
-		schedule(v, s);
+		sched_calc(v, s);
 		start = 2;
 		end = start + s[0];
 		s3k_cap_derive(system_time_cap, 26, s3k_mk_time(0, start, end));
@@ -145,7 +125,7 @@ void scheduler(void)
 		s3k_mon_resume(MONITOR, PID_FCS);
 		s3k_mon_resume(MONITOR, PID_NAV);
 		uint64_t end_time = s3k_get_time();
-		serio_printf("boot: %D\n", end_time - start_time);
+		serio_printf("boot: %d, %d, %D\n", end - 2, NSLOT - end, end_time - start_time);
 		s3k_sleep(0);
 	}
 }
