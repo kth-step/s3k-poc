@@ -1,6 +1,6 @@
 #include "s3k.h"
-#include "serio.h"
 #include "sched.h"
+#include "serio.h"
 
 #define SYSTEM_SLOTS (NSLOT - 2)
 
@@ -97,13 +97,14 @@ void apply_schedule(int s[N_COMPONENTS])
 {
 	int system_time_cap = 10;
 	int end;
-	int start = 0; 
+	int start = 0;
 
 	s3k_cap_revoke(system_time_cap);
 	for (int i = 1; i <= N_COMPONENTS; ++i) {
-		end = start + s[i - 1]; 
+		end = start + s[i - 1];
 		if (start < end && end <= SYSTEM_SLOTS) {
-			s3k_cap_derive(system_time_cap, 26, s3k_mk_time(0, start, end));
+			s3k_cap_derive(system_time_cap, 26,
+				       s3k_mk_time(0, start, end));
 			s3k_mon_suspend(MONITOR, i);
 			s3k_mon_cap_send(MONITOR, 26, i, 4);
 			s3k_mon_resume(MONITOR, i);
@@ -130,7 +131,6 @@ int main(void)
 
 	int v[N_VARIABLES];
 	int s[N_COMPONENTS];
-
 
 	for (int i = 0; i < 100; ++i) {
 		uint64_t start_time = s3k_get_time();

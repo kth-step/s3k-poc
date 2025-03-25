@@ -2,6 +2,5 @@
 
 int serio_putchar(int c)
 {
-	return serio_ns16550a_putchar(c, (void*)0x10000000);
+	return serio_ns16550a_putchar(c, (void *)0x10000000);
 }
-

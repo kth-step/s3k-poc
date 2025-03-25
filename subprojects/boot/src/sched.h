@@ -8,12 +8,12 @@
 static const int a_matrix[12] = {0, 0, 0, 4, 0, 0, 1, 0, 4, 4, 0, 0};
 static const int b_vector[3] = {8, 4, 1};
 
-static inline void sched_calc(int v[N_VARIABLES], int s[N_COMPONENTS]) {
-    for (int i = 0; i < N_COMPONENTS; ++i) {
-        s[i] = b_vector[i];
-        for (int j = 0; j < N_VARIABLES; ++j) {
-            s[i] += v[j] * a_matrix[i * N_VARIABLES + j];
-        }
-    }
+static inline void sched_calc(int v[N_VARIABLES], int s[N_COMPONENTS])
+{
+	for (int i = 0; i < N_COMPONENTS; ++i) {
+		s[i] = b_vector[i];
+		for (int j = 0; j < N_VARIABLES; ++j) {
+			s[i] += v[j] * a_matrix[i * N_VARIABLES + j];
+		}
+	}
 }
-
