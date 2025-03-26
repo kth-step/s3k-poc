@@ -35,15 +35,6 @@ void setup_process(int pid, uint64_t addr)
 	error(s3k_cap_derive(UART_MEM, 10, uart));
 	error(s3k_mon_cap_send(MONITOR, 10, pid, 1));
 	error(s3k_mon_pmp_load(MONITOR, pid, 1, 1));
-	// Derive communication channel
-	s3k_chan_t channel = pid;
-	s3k_ipc_mode_t mode = S3K_IPC_YIELD;
-	s3k_ipc_perm_t perm = S3K_IPC_CCAP;
-	error(
-	    s3k_cap_derive(CHANNEL, 9, s3k_mk_socket(channel, mode, perm, 0)));
-	error(
-	    s3k_cap_derive(9, 10 + pid, s3k_mk_socket(channel, mode, perm, 1)));
-	error(s3k_mon_cap_send(MONITOR, 9, pid, 2));
 
 	// Set PC
 	error(s3k_mon_reg_write(MONITOR, pid, S3K_REG_PC, addr));
@@ -106,7 +97,7 @@ void apply_schedule(int s[N_COMPONENTS])
 			s3k_cap_derive(system_time_cap, 26,
 				       s3k_mk_time(0, start, end));
 			s3k_mon_suspend(MONITOR, i);
-			s3k_mon_cap_send(MONITOR, 26, i, 4);
+			s3k_mon_cap_send(MONITOR, 26, i, 2);
 			s3k_mon_resume(MONITOR, i);
 		}
 		start = end;
@@ -144,5 +135,7 @@ int main(void)
 	s3k_cap_revoke(10);
 	serio_putstr("Test completed!\n");
 
+	while (1)
+		s3k_sleep(0);
 	return 0;
 }
