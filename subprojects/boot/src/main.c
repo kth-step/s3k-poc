@@ -14,14 +14,12 @@ enum {
 	CHANNEL = 6,
 };
 
-void error(int err)
-{
-	if (err) {
-		serio_printf("Error %s\n", s3k_err2str(err));
-		while (1) {
-		}
-	}
-}
+#define error(err) \
+	do { \
+	if (err) { \
+		serio_printf("Error %s at line %d\n", s3k_err2str(err), __LINE__); \
+	} \
+} while (0);
 
 void setup_process(int pid, uint64_t addr)
 {
@@ -55,10 +53,8 @@ void setup_uart(void)
 
 void setup_time(void)
 {
-	s3k_cap_t system_time = s3k_mk_time(0, 0, SYSTEM_SLOTS);
-	s3k_cap_t boot_time0 = s3k_mk_time(0, SYSTEM_SLOTS, NSLOT);
-	error(s3k_cap_derive(HART0_TIME, 10, system_time));
-	error(s3k_cap_derive(HART0_TIME, 16, boot_time0));
+	error(s3k_time_derive(HART0_TIME, 10, SYSTEM_SLOTS, 0));
+	error(s3k_time_derive(HART0_TIME, 16, NSLOT - SYSTEM_SLOTS, 1));
 	error(s3k_cap_delete(HART0_TIME));
 	s3k_sleep(0);
 }
@@ -90,23 +86,15 @@ void apply_schedule(int s[N_COMPONENTS])
 	int end;
 	int start = 0;
 
-	s3k_cap_revoke(system_time_cap);
-	for (int i = 1; i <= N_COMPONENTS; ++i) {
+	error(s3k_time_revoke(system_time_cap));
+	for (int i = 1; i < N_COMPONENTS; ++i) {
 		end = start + s[i - 1];
 		if (start < end && end <= SYSTEM_SLOTS) {
-			s3k_cap_derive(system_time_cap, 26,
-				       s3k_mk_time(0, start, end));
-			s3k_mon_suspend(MONITOR, i);
-			s3k_mon_cap_send(MONITOR, 26, i, 2);
-			s3k_mon_resume(MONITOR, i);
+			s3k_mon_time_derive(MONITOR, system_time_cap, i,  4, end - start, 1);
 		}
 		start = end;
 	}
-	if (end <= SYSTEM_SLOTS) {
-		end = SYSTEM_SLOTS;
-		s3k_cap_derive(system_time_cap, 26, s3k_mk_time(0, start, end));
-		s3k_cap_delete(26);
-	}
+	s3k_mon_time_derive(MONITOR, system_time_cap, N_COMPONENTS, 4, SYSTEM_SLOTS - start, 1);
 }
 
 int main(void)
@@ -132,7 +120,7 @@ int main(void)
 		serio_printf("sched time %d: %D\n", i, end_time - start_time);
 		s3k_sleep(0);
 	}
-	s3k_cap_revoke(10);
+	s3k_time_revoke(10);
 	serio_putstr("Test completed!\n");
 
 	while (1)
