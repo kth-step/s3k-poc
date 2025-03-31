@@ -10,10 +10,15 @@ project('s3k-poc', 'c',
   )
 
 elfs = [
-  subproject('boot').get_variable('elf'), 
-  subproject('comm').get_variable('elf'),
-  subproject('fcs').get_variable('elf'),
-  subproject('nav').get_variable('elf'),
+  subproject('monitor').get_variable('elf'), 
+  subproject('app1').get_variable('elf'),
+  subproject('app2').get_variable('elf'),
+  subproject('app3').get_variable('elf'),
+  subproject('app4').get_variable('elf'),
+  subproject('app5').get_variable('elf'),
+  subproject('app6').get_variable('elf'),
+  subproject('app7').get_variable('elf'),
+  subproject('app8').get_variable('elf'),
   subproject('s3k').get_variable('elf'),
   ]
 
