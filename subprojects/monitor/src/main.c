@@ -3,6 +3,7 @@
 #include "serio.h"
 
 #define SYSTEM_SLOTS (NSLOT - 2)
+#define RUNS 100
 
 enum {
 	BOOT_PMP = 0,
@@ -21,6 +22,13 @@ enum {
 				     s3k_err2str(err), __LINE__); \
 		}                                                 \
 	} while (0);
+
+uint64_t csrr_cycle()
+{
+	uint64_t tmp;
+	__asm__ volatile ("rdcycle %0": "=r"(tmp));
+	return tmp;
+}
 
 void setup_process(int pid, uint64_t addr)
 {
@@ -81,14 +89,14 @@ void variable_gen(int v[N_VARIABLES])
 	}
 }
 
-void apply_schedule(int s[N_COMPONENTS])
+void apply_schedule(int s[N_COMPONENTS], int components)
 {
 	int system_time_cap = 10;
 	int end;
 	int start = 0;
 
-	error(s3k_time_revoke(system_time_cap));
-	for (int i = 1; i < N_COMPONENTS; ++i) {
+	s3k_time_revoke(system_time_cap);
+	for (int i = 1; i < components; ++i) {
 		end = start + s[i - 1];
 		if (start < end && end <= SYSTEM_SLOTS) {
 			s3k_mon_time_derive(MONITOR, system_time_cap, i, 4,
@@ -96,8 +104,28 @@ void apply_schedule(int s[N_COMPONENTS])
 		}
 		start = end;
 	}
-	s3k_mon_time_derive(MONITOR, system_time_cap, N_COMPONENTS, 4,
-			    SYSTEM_SLOTS - start, 1);
+	if (SYSTEM_SLOTS - start > 0)
+		s3k_mon_time_derive(MONITOR, system_time_cap, components, 4,
+		      SYSTEM_SLOTS - start, 1);
+}
+
+uint64_t run_test(int runs, int components)
+{
+	int v[N_VARIABLES];
+	int s[N_COMPONENTS];
+	uint64_t total_time = 0;
+	for (int i = 0; i < RUNS; ++i) {
+		s3k_sleep(0);
+		//__asm__ volatile (".word 0xb");
+		variable_gen(v);
+		sched_calc(v, s);
+		uint64_t start_time = csrr_cycle();
+		apply_schedule(s, components);
+		uint64_t end_time = csrr_cycle();
+		total_time += end_time - start_time;
+	}
+	s3k_time_revoke(10);
+	return total_time / runs;
 }
 
 int main(void)
@@ -111,20 +139,17 @@ int main(void)
 
 	setup_time();
 
-	int v[N_VARIABLES];
-	int s[N_COMPONENTS];
+	uint64_t stats[N_COMPONENTS];
 
-	for (int i = 0; i < 100; ++i) {
-		uint64_t start_time = s3k_get_time();
-		variable_gen(v);
-		sched_calc(v, s);
-		apply_schedule(s);
-		uint64_t end_time = s3k_get_time();
-		serio_printf("sched time %d: %D\n", i, end_time - start_time);
-		s3k_sleep(0);
+	for (int i = 2; i <= N_COMPONENTS; ++i) {
+		stats[i-1] = run_test(RUNS, i);
 	}
-	s3k_time_revoke(10);
-	serio_putstr("Test completed!\n");
+
+	serio_putstr("Tests completed!\n");
+	serio_putstr("comps\tcost\n");
+	for (int i = 2; i <= N_COMPONENTS; ++i) {
+		serio_printf("%d\t%D\n", i, stats[i-1]);
+	}
 
 	while (1)
 		s3k_sleep(0);
