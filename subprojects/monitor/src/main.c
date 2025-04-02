@@ -26,7 +26,7 @@ enum {
 uint64_t csrr_cycle()
 {
 	uint64_t tmp;
-	__asm__ volatile ("rdcycle %0": "=r"(tmp));
+	__asm__ volatile("rdcycle %0" : "=r"(tmp));
 	return tmp;
 }
 
@@ -64,7 +64,7 @@ void setup_time(void)
 {
 	error(s3k_time_derive(HART0_TIME, 10, SYSTEM_SLOTS, 0));
 	error(s3k_time_derive(HART0_TIME, 16, NSLOT - SYSTEM_SLOTS, 1));
-	error(s3k_cap_delete(HART0_TIME));
+	error(s3k_time_delete(HART0_TIME));
 	s3k_sleep(0);
 }
 
@@ -106,7 +106,7 @@ void apply_schedule(int s[N_COMPONENTS], int components)
 	}
 	if (SYSTEM_SLOTS - start > 0)
 		s3k_mon_time_derive(MONITOR, system_time_cap, components, 4,
-		      SYSTEM_SLOTS - start, 1);
+				    SYSTEM_SLOTS - start, 1);
 }
 
 uint64_t run_test(int runs, int components)
@@ -142,13 +142,13 @@ int main(void)
 	uint64_t stats[N_COMPONENTS];
 
 	for (int i = 2; i <= N_COMPONENTS; ++i) {
-		stats[i-1] = run_test(RUNS, i);
+		stats[i - 1] = run_test(RUNS, i);
 	}
 
 	serio_putstr("Tests completed!\n");
 	serio_putstr("comps\tcost\n");
 	for (int i = 2; i <= N_COMPONENTS; ++i) {
-		serio_printf("%d\t%D\n", i, stats[i-1]);
+		serio_printf("%d\t%D\n", i, stats[i - 1]);
 	}
 
 	while (1)
