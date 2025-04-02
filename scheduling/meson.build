@@ -22,7 +22,7 @@ elfs = [
   subproject('s3k').get_variable('elf'),
   ]
 
-qemu_gen = find_program('scripts/qemu_gen.sh')
+qemu_gen = find_program('../scripts/qemu_gen.sh')
 qemu = custom_target('qemu',
   output : 'qemu.sh',
   input : elfs,
@@ -30,7 +30,7 @@ qemu = custom_target('qemu',
   build_by_default: true,
   )
 
-gdb_gen = find_program('scripts/gdb_gen.sh')
+gdb_gen = find_program('../scripts/gdb_gen.sh')
 gdb = custom_target('gdb',
   output : 'gdb.sh',
   input : elfs,
@@ -38,7 +38,7 @@ gdb = custom_target('gdb',
   build_by_default: true,
   )
 
-gdbremote_gen = find_program('scripts/gdbremote_gen.sh')
+gdbremote_gen = find_program('../scripts/gdbremote_gen.sh')
 gdbremote = custom_target('gdbremote',
   output : 'gdbremote.sh',
   input : elfs,
