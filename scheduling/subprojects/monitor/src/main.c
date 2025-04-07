@@ -116,13 +116,13 @@ uint64_t run_test(int runs, int components)
 	uint64_t total_time = 0;
 	for (int i = 0; i < RUNS; ++i) {
 		s3k_sleep(0);
-		//__asm__ volatile (".word 0xb");
 		variable_gen(v);
 		sched_calc(v, s);
 		uint64_t start_time = csrr_cycle();
 		apply_schedule(s, components);
 		uint64_t end_time = csrr_cycle();
 		total_time += end_time - start_time;
+		serio_printf("mon: %D\n", end_time - start_time);
 	}
 	s3k_time_revoke(10);
 	return total_time / runs;
@@ -132,8 +132,10 @@ int main(void)
 {
 	setup_uart();
 
+	serio_printf("Setup uart\n");
+
 	for (int i = 1; i <= N_COMPONENTS; ++i) {
-		setup_process(i, 0x80010000 + 0x10000 * i);
+		setup_process(i, 0x80000000 + 0x10000 * i);
 	}
 	serio_printf("initialization complete\n");
 

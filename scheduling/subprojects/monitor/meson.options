@@ -1,4 +1,4 @@
-option('nproc', type : 'integer', value : 4, yield : true)
+option('nproc', type : 'integer', value : 9, yield : true)
 option('nhart', type : 'integer', value : 1, yield : true)
 option('nslot', type : 'integer', value : 200, yield : true)
 option('ntick', type : 'integer', value : 1000, yield : true)
