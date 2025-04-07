@@ -77,7 +77,7 @@ int main(void)
 	serio_putstr("UART setup\n");
 
 	for (int i = 1; i <= N_COMPONENTS; ++i) {
-		setup_memory(i, 0x80010000 + 0x10000 * i);
+		setup_memory(i, 0x80000000 + 0x10000 * i);
 	}
 
 	s3k_sleep(0);
