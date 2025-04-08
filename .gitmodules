@@ -1,0 +1,12 @@
+[submodule "modules/s3k"]
+	path = modules/s3k
+	url = git@github.com:kth-step/s3k.git
+	branch = hakarlsson/dev
+[submodule "modules/libs3k"]
+	path = modules/libs3k
+	url = git@github.com:kth-step/libs3k.git
+	branch = hakarlsson/dev
+[submodule "modules/libserio"]
+	path = modules/libserio
+	url = git@github.com:hakarlsson/libserio.git
+	branch = main
